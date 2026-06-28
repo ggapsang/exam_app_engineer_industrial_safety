@@ -70,8 +70,8 @@ fun QuizScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var showSubmitDialog by remember { mutableStateOf(false) }
 
-    // 풀이 완료 시 결과 화면으로
-    LaunchedEffect(vm.finished) {
+    // 풀이 완료 시 결과 화면으로 (result 는 채점 후 비동기로 채워지므로 두 값 모두 키로 관찰)
+    LaunchedEffect(vm.finished, vm.result) {
         if (vm.finished && vm.result != null) onFinished()
     }
 
