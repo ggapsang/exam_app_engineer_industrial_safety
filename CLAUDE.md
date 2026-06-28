@@ -43,6 +43,8 @@ python -c "import sqlite3;c=sqlite3.connect('industrial_safety_engineer.db');pri
 
 Two pre-quiz/exit flows exist: the mock-exam start sheet (`MockStartScreen`, grading choice, remembered via `settings.mockSkipStart`/`mockInstant`) and the session-exit sheet in `QuizScreen` (`settings.sessionExitSave` = ask/always/never; saves wrong answers + a resume snapshot). **Resume (이어풀기)** persists an active EXAM/SUBJECT session as JSON (`data/ResumeSnapshot`) in `SettingsStore.resumeJson`; `QuizSessionViewModel.exitWithSave()` writes it, `finish()` clears it, and Home's quick-start resumes it.
 
+**Wrong-note collection is mode-dependent.** `finish()` only auto-records `user_attempts` for non-MOCK modes (and skips when `recordOnFinish=false`, used by session-limited review). For MOCK, nothing is auto-saved; after grading, `ResultScreen` shows the §5.15 sheet asking whether to push wrong (+optionally unanswered) questions into the permanent wrong note via `saveMockWrongToNote()`, governed by `settings.mockWrongSave` (ask/always/never) + `mockWrongIncludeUnanswered`. The result screen's "이번 회차 오답 보기" is a session-limited review (`startFromIds(record=false)`) that does NOT touch the wrong note; "오답노트에서 복습" / "오답 복습" navigate to the permanent wrong-note screen.
+
 ## Hard constraints (rejection criteria — don't break these)
 
 - **Fully offline:** no `INTERNET` permission. Don't add network calls.

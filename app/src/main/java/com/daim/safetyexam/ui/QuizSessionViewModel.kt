@@ -52,6 +52,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     var remainingSec by mutableStateOf(0); private set
     private var timerJob: Job? = null
 
+    private var recordOnFinish = true
     private var startedAt: String = ""
     private var sessionStartMs: Long = 0L
     private val elapsedByQ = HashMap<Int, Long>()
@@ -78,9 +79,12 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     fun startMock(instant: Boolean) =
         launchStart(StudyMode.MOCK, withTimer = true, timerSec = 9000, instantOverride = instant) { repo.mockQuestionIds() }
 
-    /** 이미 결정된 문항 ID 목록으로 시작 (오답노트/즐겨찾기 일괄 풀이) */
-    fun startFromIds(newMode: StudyMode, ids: List<Int>) =
-        launchStart(newMode) { ids }
+    /**
+     * 이미 결정된 문항 ID 목록으로 시작 (오답노트/즐겨찾기 일괄 풀이).
+     * record=false 면 완료해도 user_attempts에 기록하지 않는다(세션 한정 복습용).
+     */
+    fun startFromIds(newMode: StudyMode, ids: List<Int>, record: Boolean = true) =
+        launchStart(newMode, record = record) { ids }
 
     /** 이어풀기 — 저장된 스냅샷으로 복원 */
     fun resume(snap: ResumeSnapshot) =
@@ -92,10 +96,12 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         timerSec: Int = 9000,
         instantOverride: Boolean? = null,
         restore: ResumeSnapshot? = null,
+        record: Boolean = true,
         idProvider: suspend () -> List<Int>
     ) {
         timerJob?.cancel()
         mode = newMode
+        recordOnFinish = record
         instantGrading = instantOverride ?: (settings.instantGrading && newMode != StudyMode.MOCK)
         timerEnabled = withTimer
         remainingSec = timerSec
@@ -208,6 +214,9 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
             val shortNames = HashMap<Int, String>()
             var correct = 0
 
+            // 모의고사는 채점 직후 사용자에게 묻고 저장하므로 자동 기록하지 않는다(§5.15).
+            // 세션 한정 복습(recordOnFinish=false)도 기록하지 않는다.
+            val record = recordOnFinish && mode != StudyMode.MOCK
             withContext(Dispatchers.IO) {
                 for (q in questions) {
                     val sel = answers[q.id]
@@ -216,7 +225,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
                     perSubjectTotal[q.subjectId] = (perSubjectTotal[q.subjectId] ?: 0) + 1
                     if (isCorrect) perSubjectCorrect[q.subjectId] = (perSubjectCorrect[q.subjectId] ?: 0) + 1
                     shortNames[q.subjectId] = q.subjectShort
-                    repo.recordAttempt(q.id, sel, isCorrect, elapsedByQ[q.id] ?: 0L)
+                    if (record) repo.recordAttempt(q.id, sel, isCorrect, elapsedByQ[q.id] ?: 0L)
                 }
             }
 
@@ -227,6 +236,37 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
             val res = SessionResult(mode, questions.size, correct, elapsedSec, perSubject)
             result = res
             withContext(Dispatchers.IO) { repo.saveSession(res, startedAt) }
+        }
+    }
+
+    // ---- 모의고사 채점 후 오답 저장 (§5.15) ----
+
+    /** 미응시(응답 안 한) 문항 수 */
+    val unansweredCount: Int get() = questions.size - answeredCount
+
+    /** 이번 세션의 오답(응답+오답) 문항 id. includeUnanswered=true 면 미응시도 포함 */
+    fun sessionWrongIds(includeUnanswered: Boolean): List<Int> =
+        questions.filter { q ->
+            val s = answers[q.id]
+            if (s == null) includeUnanswered else s != q.answerNo
+        }.map { it.id }
+
+    /** 선택한 오답(+옵션상 미응시)을 오답노트(user_attempts, is_correct=0)에 기록 */
+    fun saveMockWrongToNote(includeUnanswered: Boolean) {
+        val qs = questions
+        val ans = HashMap(answers)
+        val elapsed = HashMap(elapsedByQ)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                for (q in qs) {
+                    val sel = ans[q.id]
+                    if (sel == null) {
+                        if (includeUnanswered) repo.recordAttempt(q.id, null, false, elapsed[q.id] ?: 0L)
+                    } else if (sel != q.answerNo) {
+                        repo.recordAttempt(q.id, sel, false, elapsed[q.id] ?: 0L)
+                    }
+                }
+            }
         }
     }
 

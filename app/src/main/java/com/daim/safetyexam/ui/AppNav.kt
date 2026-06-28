@@ -106,9 +106,22 @@ fun AppNav(quizVm: QuizSessionViewModel, settings: SettingsStore) {
         composable(Routes.RESULT) {
             ResultScreen(
                 vm = quizVm,
+                settings = settings,
                 onHome = { nav.popBackStack(Routes.HOME, inclusive = false) },
-                onReviewWrong = {
+                onReviewWrongNote = {
                     nav.navigate(Routes.WRONG) { popUpTo(Routes.HOME) { inclusive = false } }
+                },
+                onSessionReview = { ids ->
+                    quizVm.startFromIds(StudyMode.WRONG, ids, record = false)
+                    nav.navigate(Routes.QUIZ) { popUpTo(Routes.HOME) { inclusive = false } }
+                },
+                onRetryMock = {
+                    if (settings.mockSkipStart) {
+                        quizVm.startMock(settings.mockInstant)
+                        nav.navigate(Routes.QUIZ) { popUpTo(Routes.HOME) { inclusive = false } }
+                    } else {
+                        nav.navigate(Routes.MOCK_START) { popUpTo(Routes.HOME) { inclusive = false } }
+                    }
                 }
             )
         }

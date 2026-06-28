@@ -13,6 +13,9 @@ enum class FontScale(val scale: Float, val label: String) {
 /** 회차/과목 풀이 중단 시 오답 저장 정책 */
 enum class SessionExitSave { ASK, ALWAYS, NEVER }
 
+/** 모의고사 채점 후 오답 저장 정책 (§5.15) */
+enum class MockWrongSave { ASK, ALWAYS, NEVER }
+
 /** 설정값. Compose 상태로 노출해 즉시 반영. */
 class SettingsStore private constructor(context: Context) {
 
@@ -41,6 +44,14 @@ class SettingsStore private constructor(context: Context) {
     )
         private set
 
+    // 모의고사 채점 후 오답 저장(§5.15)
+    var mockWrongSave by mutableStateOf(
+        MockWrongSave.valueOf(prefs.getString("mock_wrong_save", MockWrongSave.ASK.name)!!)
+    )
+        private set
+    var mockWrongIncludeUnanswered by mutableStateOf(prefs.getBoolean("mock_wrong_incl_unanswered", true))
+        private set
+
     /** 이어풀기 스냅샷(JSON). 빈값이면 없음 */
     var resumeJson by mutableStateOf(prefs.getString("resume", "") ?: "")
         private set
@@ -53,6 +64,8 @@ class SettingsStore private constructor(context: Context) {
     fun updateMockSkipStart(v: Boolean) { mockSkipStart = v; prefs.edit().putBoolean("mock_skip_start", v).apply() }
     fun updateMockInstant(v: Boolean) { mockInstant = v; prefs.edit().putBoolean("mock_instant", v).apply() }
     fun updateSessionExitSave(v: SessionExitSave) { sessionExitSave = v; prefs.edit().putString("session_exit_save", v.name).apply() }
+    fun updateMockWrongSave(v: MockWrongSave) { mockWrongSave = v; prefs.edit().putString("mock_wrong_save", v.name).apply() }
+    fun updateMockWrongIncludeUnanswered(v: Boolean) { mockWrongIncludeUnanswered = v; prefs.edit().putBoolean("mock_wrong_incl_unanswered", v).apply() }
 
     fun saveResume(json: String) { resumeJson = json; prefs.edit().putString("resume", json).apply() }
     fun clearResume() { resumeJson = ""; prefs.edit().remove("resume").apply() }

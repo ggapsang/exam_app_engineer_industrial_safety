@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.FontScale
 import com.daim.safetyexam.data.Reminder
+import com.daim.safetyexam.data.MockWrongSave
 import com.daim.safetyexam.data.Repository
 import com.daim.safetyexam.data.SessionExitSave
 import com.daim.safetyexam.data.SettingsStore
@@ -163,6 +164,38 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                         )
                     }
                 )
+                Divider()
+                Text("모의고사 오답 저장", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                Text("채점 후 틀린 문제를 오답노트에 저장", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                Spacer(Modifier.height(8.dp))
+                Segmented(
+                    options = listOf("매번 묻기", "항상 저장", "저장 안 함"),
+                    selectedIndex = when (settings.mockWrongSave) {
+                        MockWrongSave.ASK -> 0
+                        MockWrongSave.ALWAYS -> 1
+                        MockWrongSave.NEVER -> 2
+                    },
+                    onSelect = {
+                        settings.updateMockWrongSave(
+                            when (it) {
+                                0 -> MockWrongSave.ASK
+                                1 -> MockWrongSave.ALWAYS
+                                else -> MockWrongSave.NEVER
+                            }
+                        )
+                    }
+                )
+                if (settings.mockWrongSave == MockWrongSave.ALWAYS) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("미응시 문항도 함께 저장", style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.mockWrongIncludeUnanswered,
+                            onCheckedChange = { settings.updateMockWrongIncludeUnanswered(it) },
+                            colors = SwitchDefaults.colors(checkedTrackColor = c.amber, checkedThumbColor = c.navy)
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(14.dp))
@@ -203,7 +236,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
             SectionLabel("정보")
             Spacer(Modifier.height(6.dp))
             SettingCard {
-                Text("산업안전기사 기출 v1.1.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                Text("산업안전기사 기출 v1.2.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
                 Spacer(Modifier.height(4.dp))
                 Text("문항 1,800 · 5개년(2017~2021) 15회차 · 완전 오프라인", style = MaterialTheme.typography.labelSmall, color = c.muted)
                 Text("학습 데이터는 기기 내부에만 저장되며 외부로 전송되지 않습니다.", style = MaterialTheme.typography.labelSmall, color = c.muted)
