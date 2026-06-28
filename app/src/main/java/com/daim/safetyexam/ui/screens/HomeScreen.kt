@@ -13,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -116,13 +113,17 @@ fun HomeScreen(
                 ModeEntry("즐겨찾기", "별표 $favCount", Icons.Filled.Star, false, onFavorite),
                 ModeEntry("검색", "키워드 찾기", Icons.Filled.Search, false, onSearch),
             )
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.height(((modes.size + 1) / 2 * 96).dp)
-            ) {
-                items(modes) { m -> ModeCard(m) }
+            // LazyVerticalGrid 대신 일반 Row 그리드로 배치 (verticalScroll 안에서 높이가
+            // 콘텐츠에 맞게 늘어나도록 — 고정 높이 그리드는 마지막 줄이 잘림)
+            modes.chunked(2).forEach { rowItems ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    rowItems.forEach { m -> ModeCard(m, Modifier.weight(1f)) }
+                    if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(10.dp))
             }
         }
     }
@@ -172,10 +173,10 @@ private fun QuickButton(value: String, label: String, primary: Boolean, modifier
 }
 
 @Composable
-private fun ModeCard(m: ModeEntry) {
+private fun ModeCard(m: ModeEntry, modifier: Modifier = Modifier) {
     val c = MaterialTheme.appColors
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(c.card)
