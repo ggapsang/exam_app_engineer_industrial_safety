@@ -25,10 +25,11 @@ class SettingsStore private constructor(context: Context) {
     var notifyTime by mutableStateOf(prefs.getString("notify_time", "") ?: "")
         private set
 
-    fun setTheme(v: ThemeMode) { theme = v; prefs.edit().putString("theme", v.name).apply() }
-    fun setFont(v: FontScale) { fontScale = v; prefs.edit().putString("font", v.name).apply() }
-    fun setInstantGrading(v: Boolean) { instantGrading = v; prefs.edit().putBoolean("instant_grading", v).apply() }
-    fun setNotifyTime(v: String) { notifyTime = v; prefs.edit().putString("notify_time", v).apply() }
+    // 함수명을 update* 로 두는 이유: var 프로퍼티가 자동 생성하는 setXxx JVM 시그니처와 충돌 방지
+    fun updateTheme(v: ThemeMode) { theme = v; prefs.edit().putString("theme", v.name).apply() }
+    fun updateFont(v: FontScale) { fontScale = v; prefs.edit().putString("font", v.name).apply() }
+    fun updateInstantGrading(v: Boolean) { instantGrading = v; prefs.edit().putBoolean("instant_grading", v).apply() }
+    fun updateNotifyTime(v: String) { notifyTime = v; prefs.edit().putString("notify_time", v).apply() }
 
     companion object {
         @Volatile private var instance: SettingsStore? = null

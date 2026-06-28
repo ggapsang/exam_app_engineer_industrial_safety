@@ -102,7 +102,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                 Segmented(
                     options = ThemeMode.values().map { themeLabel(it) },
                     selectedIndex = ThemeMode.values().indexOf(settings.theme),
-                    onSelect = { settings.setTheme(ThemeMode.values()[it]) }
+                    onSelect = { settings.updateTheme(ThemeMode.values()[it]) }
                 )
                 Spacer(Modifier.height(14.dp))
                 Text("글자 크기", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
@@ -110,7 +110,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                 Segmented(
                     options = FontScale.values().map { it.label },
                     selectedIndex = FontScale.values().indexOf(settings.fontScale),
-                    onSelect = { settings.setFont(FontScale.values()[it]) }
+                    onSelect = { settings.updateFont(FontScale.values()[it]) }
                 )
             }
 
@@ -125,7 +125,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                     }
                     Switch(
                         checked = settings.instantGrading,
-                        onCheckedChange = { settings.setInstantGrading(it) },
+                        onCheckedChange = { settings.updateInstantGrading(it) },
                         colors = SwitchDefaults.colors(checkedTrackColor = c.amber, checkedThumbColor = c.navy)
                     )
                 }
@@ -143,13 +143,13 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                         val now = java.util.Calendar.getInstance()
                         TimePickerDialog(context, { _, h, m ->
                             val time = "%02d:%02d".format(h, m)
-                            settings.setNotifyTime(time)
+                            settings.updateNotifyTime(time)
                             Reminder.schedule(context, time)
                             Toast.makeText(context, "매일 $time 알림 설정", Toast.LENGTH_SHORT).show()
                         }, now.get(java.util.Calendar.HOUR_OF_DAY), now.get(java.util.Calendar.MINUTE), true).show()
                     }
                     if (settings.notifyTime.isNotBlank()) {
-                        PillButton("해제") { settings.setNotifyTime(""); Reminder.cancel(context) }
+                        PillButton("해제") { settings.updateNotifyTime(""); Reminder.cancel(context) }
                     }
                 }
             }
