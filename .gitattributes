@@ -1,0 +1,16 @@
+# 기본: 텍스트 자동 정규화 (저장소에는 LF)
+* text=auto eol=lf
+
+# Windows 배치 파일은 CRLF
+*.bat text eol=crlf
+
+# Gradle wrapper 스크립트는 Unix에서 실행되므로 LF 고정
+gradlew text eol=lf
+
+# 바이너리 자산 — 변환 금지
+*.jar binary
+*.db binary
+*.gif binary
+*.png binary
+*.jks binary
+*.keystore binary

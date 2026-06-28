@@ -1,0 +1,23 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore (서명 키는 커밋하지 않음)
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 루트의 원본 데이터(소스) — 앱에는 app/src/main/assets/ 사본이 임베드되어 빌드됩니다.
+# 중복 4MB+ 추적을 피하기 위해 루트 원본은 무시합니다.
+/industrial_safety_engineer.db
+/images/

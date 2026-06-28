@@ -1,0 +1,184 @@
+package com.daim.safetyexam.ui
+
+import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.daim.safetyexam.data.QuestionFull
+import com.daim.safetyexam.data.Repository
+import com.daim.safetyexam.data.SettingsStore
+import com.daim.safetyexam.data.StudyMode
+import com.daim.safetyexam.data.SubjectStat
+import com.daim.safetyexam.data.SessionResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * 활동(Activity) 범위로 공유되는 풀이 세션 상태.
+ * 큰 문항 리스트를 NavArg로 넘기지 않고 이 VM에 담아 화면 간 공유한다.
+ */
+class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
+
+    // DB 최초 복사는 무거우므로 main 스레드 생성자에서 건드리지 않도록 lazy 처리
+    private val repo by lazy { Repository.get(app) }
+    private val settings = SettingsStore.get(app)
+
+    var mode by mutableStateOf(StudyMode.EXAM); private set
+    var questions by mutableStateOf<List<QuestionFull>>(emptyList()); private set
+    var loading by mutableStateOf(false); private set
+    var currentIndex by mutableStateOf(0); private set
+
+    /** questionId -> 선택 보기 번호 */
+    val answers = mutableStateMapOf<Int, Int>()
+    /** 즉시 채점에서 이미 공개된 문항 id */
+    val revealed = mutableStateMapOf<Int, Boolean>()
+
+    var instantGrading by mutableStateOf(true); private set
+    var finished by mutableStateOf(false); private set
+    var result by mutableStateOf<SessionResult?>(null); private set
+
+    // 모의고사 타이머
+    var timerEnabled by mutableStateOf(false); private set
+    var remainingSec by mutableStateOf(0); private set
+    private var timerJob: Job? = null
+
+    private var startedAt: String = ""
+    private var sessionStartMs: Long = 0L
+    private val elapsedByQ = HashMap<Int, Long>()
+    private var enterQuestionMs: Long = 0L
+
+    val current: QuestionFull? get() = questions.getOrNull(currentIndex)
+    val answeredCount: Int get() = questions.count { answers.containsKey(it.id) }
+
+    // ---- 진입 지점 (홈/목록에서 호출) ----
+
+    fun startExam(examId: Int) =
+        launchStart(StudyMode.EXAM) { repo.examQuestionIds(examId) }
+
+    fun startSubject(subjectId: Int, count: Int, order: String) =
+        launchStart(StudyMode.SUBJECT) { repo.subjectQuestionIds(subjectId, count, order) }
+
+    fun startMock() =
+        launchStart(StudyMode.MOCK, withTimer = true, timerSec = 9000) { repo.mockQuestionIds() }
+
+    /** 이미 결정된 문항 ID 목록으로 시작 (오답노트/즐겨찾기 일괄 풀이) */
+    fun startFromIds(newMode: StudyMode, ids: List<Int>) =
+        launchStart(newMode) { ids }
+
+    private fun launchStart(
+        newMode: StudyMode,
+        withTimer: Boolean = false,
+        timerSec: Int = 9000,
+        idProvider: suspend () -> List<Int>
+    ) {
+        timerJob?.cancel()
+        mode = newMode
+        instantGrading = settings.instantGrading && newMode != StudyMode.MOCK
+        timerEnabled = withTimer
+        remainingSec = timerSec
+        finished = false
+        result = null
+        currentIndex = 0
+        questions = emptyList()
+        answers.clear()
+        revealed.clear()
+        elapsedByQ.clear()
+        loading = true
+        startedAt = nowText()
+        sessionStartMs = System.currentTimeMillis()
+        enterQuestionMs = sessionStartMs
+
+        viewModelScope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                val ids = idProvider()
+                repo.loadQuestions(ids)
+            }
+            questions = loaded
+            loading = false
+            if (withTimer && loaded.isNotEmpty()) startTimer()
+        }
+    }
+
+    private fun startTimer() {
+        timerJob = viewModelScope.launch {
+            while (remainingSec > 0 && !finished) {
+                delay(1000)
+                remainingSec -= 1
+            }
+            if (!finished) finish()
+        }
+    }
+
+    fun select(no: Int) {
+        val q = current ?: return
+        answers[q.id] = no
+        if (instantGrading) revealed[q.id] = true
+    }
+
+    fun goTo(index: Int) {
+        accrueElapsed()
+        currentIndex = index.coerceIn(0, (questions.size - 1).coerceAtLeast(0))
+        enterQuestionMs = System.currentTimeMillis()
+    }
+
+    fun next() { if (currentIndex < questions.size - 1) goTo(currentIndex + 1) }
+    fun prev() { if (currentIndex > 0) goTo(currentIndex - 1) }
+
+    private fun accrueElapsed() {
+        val q = current ?: return
+        val now = System.currentTimeMillis()
+        elapsedByQ[q.id] = (elapsedByQ[q.id] ?: 0L) + (now - enterQuestionMs)
+    }
+
+    fun finish() {
+        if (finished) return
+        accrueElapsed()
+        timerJob?.cancel()
+        finished = true
+
+        viewModelScope.launch {
+            val perSubjectTotal = HashMap<Int, Int>()
+            val perSubjectCorrect = HashMap<Int, Int>()
+            val shortNames = HashMap<Int, String>()
+            var correct = 0
+
+            withContext(Dispatchers.IO) {
+                for (q in questions) {
+                    val sel = answers[q.id]
+                    val isCorrect = sel != null && sel == q.answerNo
+                    if (isCorrect) correct++
+                    perSubjectTotal[q.subjectId] = (perSubjectTotal[q.subjectId] ?: 0) + 1
+                    if (isCorrect) perSubjectCorrect[q.subjectId] = (perSubjectCorrect[q.subjectId] ?: 0) + 1
+                    shortNames[q.subjectId] = q.subjectShort
+                    repo.recordAttempt(q.id, sel, isCorrect, elapsedByQ[q.id] ?: 0L)
+                }
+            }
+
+            val elapsedSec = ((System.currentTimeMillis() - sessionStartMs) / 1000).toInt()
+            val perSubject = perSubjectTotal.keys.sorted().map { sid ->
+                SubjectStat(sid, shortNames[sid] ?: "", perSubjectTotal[sid] ?: 0, perSubjectCorrect[sid] ?: 0)
+            }
+            val res = SessionResult(mode, questions.size, correct, elapsedSec, perSubject)
+            result = res
+            withContext(Dispatchers.IO) { repo.saveSession(res, startedAt) }
+        }
+    }
+
+    private fun nowText(): String {
+        // SQLite datetime('now')와 동일한 UTC "yyyy-MM-dd HH:mm:ss" 포맷
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        return fmt.format(java.util.Date())
+    }
+
+    override fun onCleared() {
+        timerJob?.cancel()
+        super.onCleared()
+    }
+}

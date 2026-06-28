@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose가 실제 테마를 그리므로, 베이스는 별도 액션바 없는 테마 사용 -->
+    <style name="Theme.SafetyExam" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
