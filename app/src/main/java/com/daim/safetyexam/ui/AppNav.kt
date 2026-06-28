@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.daim.safetyexam.data.ResumeSnapshot
 import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.StudyMode
 import com.daim.safetyexam.ui.screens.*
@@ -14,6 +15,7 @@ object Routes {
     const val HOME = "home"
     const val EXAM_LIST = "exam_list"
     const val SUBJECT_SETUP = "subject_setup"
+    const val MOCK_START = "mock_start"
     const val QUIZ = "quiz"
     const val RESULT = "result"
     const val WRONG = "wrong"
@@ -33,17 +35,39 @@ fun AppNav(quizVm: QuizSessionViewModel, settings: SettingsStore) {
 
         composable(Routes.HOME) {
             HomeScreen(
+                settings = settings,
                 onExam = { nav.navigate(Routes.EXAM_LIST) },
                 onSubject = { nav.navigate(Routes.SUBJECT_SETUP) },
                 onMock = {
-                    quizVm.startMock()
-                    nav.navigate(Routes.QUIZ)
+                    if (settings.mockSkipStart) {
+                        quizVm.startMock(settings.mockInstant)
+                        nav.navigate(Routes.QUIZ)
+                    } else {
+                        nav.navigate(Routes.MOCK_START)
+                    }
+                },
+                onResume = {
+                    ResumeSnapshot.fromJson(settings.resumeJson)?.let {
+                        quizVm.resume(it)
+                        nav.navigate(Routes.QUIZ)
+                    }
                 },
                 onWrong = { nav.navigate(Routes.WRONG) },
                 onFavorite = { nav.navigate(Routes.FAVORITE) },
                 onSearch = { nav.navigate(Routes.SEARCH) },
                 onStats = { nav.navigate(Routes.STATS) },
                 onSettings = { nav.navigate(Routes.SETTINGS) }
+            )
+        }
+
+        composable(Routes.MOCK_START) {
+            MockStartScreen(
+                settings = settings,
+                onCancel = { nav.popBackStack() },
+                onStart = { instant ->
+                    quizVm.startMock(instant)
+                    nav.navigate(Routes.QUIZ) { popUpTo(Routes.MOCK_START) { inclusive = true } }
+                }
             )
         }
 

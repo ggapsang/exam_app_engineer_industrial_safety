@@ -255,11 +255,13 @@ fun ChoiceItem(
 @Composable
 private fun NumberCircle(no: Int, state: ChoiceState) {
     val c = MaterialTheme.appColors
+    // 채운 번호 원의 글자: 다크에서는 밝은 채움 위에 어두운 톤(§2.3), 라이트는 기존 규칙
+    val darkGlyph = Color(0xFF0F141B)
     val (fill, textColor, borderColor) = when (state) {
         ChoiceState.DEFAULT -> Triple(Color.Transparent, c.muted, c.muted)
-        ChoiceState.SELECTED -> Triple(c.amber, c.navy, c.amber)
-        ChoiceState.CORRECT -> Triple(c.green, Color.White, c.green)
-        ChoiceState.WRONG -> Triple(c.red, Color.White, c.red)
+        ChoiceState.SELECTED -> Triple(c.amber, if (c.isDark) darkGlyph else c.navy, c.amber)
+        ChoiceState.CORRECT -> Triple(c.green, if (c.isDark) darkGlyph else Color.White, c.green)
+        ChoiceState.WRONG -> Triple(c.red, if (c.isDark) darkGlyph else Color.White, c.red)
     }
     Box(
         Modifier
@@ -374,7 +376,7 @@ private fun SafetyButton(
             .padding(horizontal = 16.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge, color = fg)
+        Text(text, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = fg)
     }
 }
 
@@ -414,6 +416,62 @@ private fun BottomItem(label: String, icon: ImageVector, active: Boolean, onClic
         Spacer(Modifier.height(3.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
     }
+}
+
+// ──────────────────────────────── 토글 / 체크 / 그립 ────────────────────────────────
+
+/** 디자인 토글 스위치 (트랙 46×26, ON=amber·우측 / OFF=#CDD4E0·좌측) */
+@Composable
+fun SafetyToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.appColors
+    Box(
+        modifier
+            .size(width = 46.dp, height = 26.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (checked) c.amber else if (c.isDark) Color(0xFF3A4350) else Color(0xFFCDD4E0))
+            .clickable { onCheckedChange(!checked) },
+        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart
+    ) {
+        Box(
+            Modifier
+                .padding(horizontal = 3.dp)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+        )
+    }
+}
+
+@Composable
+fun SafetyCheckbox(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: String, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.appColors
+    Row(
+        modifier.clickable { onCheckedChange(!checked) }.padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(18.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(if (checked) c.navy else Color.Transparent)
+                .border(1.5.dp, if (checked) c.navy else c.muted, RoundedCornerShape(5.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (checked) Icon(Icons.Filled.Check, contentDescription = null, tint = c.onNavy, modifier = Modifier.size(13.dp))
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+}
+
+@Composable
+fun SheetGrip() {
+    Box(
+        Modifier
+            .size(width = 36.dp, height = 4.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(MaterialTheme.appColors.line)
+    )
 }
 
 // ──────────────────────────────── 이미지 ────────────────────────────────

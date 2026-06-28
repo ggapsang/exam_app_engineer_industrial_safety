@@ -11,8 +11,8 @@ android {
         applicationId = "com.daim.safetyexam"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         // 세로 고정·오프라인이므로 별도 인터넷 권한 없음
         vectorDrawables { useSupportLibrary = true }

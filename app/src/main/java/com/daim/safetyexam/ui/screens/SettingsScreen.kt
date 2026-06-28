@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.FontScale
 import com.daim.safetyexam.data.Reminder
 import com.daim.safetyexam.data.Repository
+import com.daim.safetyexam.data.SessionExitSave
 import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.ThemeMode
 import com.daim.safetyexam.ui.AppTopBar
@@ -121,7 +122,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("즉시 채점", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
-                        Text("선택 즉시 정·오답·해설 표시 (모의고사 제외)", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                        Text("선택 즉시 정·오답·해설 표시 (회차/과목)", style = MaterialTheme.typography.labelSmall, color = c.muted)
                     }
                     Switch(
                         checked = settings.instantGrading,
@@ -129,6 +130,39 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                         colors = SwitchDefaults.colors(checkedTrackColor = c.amber, checkedThumbColor = c.navy)
                     )
                 }
+                Divider()
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("모의고사 시작 안내", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                        Text("모의고사 진입 시 채점 방식을 매번 묻기", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                    }
+                    Switch(
+                        checked = !settings.mockSkipStart,
+                        onCheckedChange = { settings.updateMockSkipStart(!it) },
+                        colors = SwitchDefaults.colors(checkedTrackColor = c.amber, checkedThumbColor = c.navy)
+                    )
+                }
+                Divider()
+                Text("중단 시 오답 저장", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                Text("회차/과목 풀이를 중간에 나갈 때", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                Spacer(Modifier.height(8.dp))
+                Segmented(
+                    options = listOf("매번 묻기", "항상 저장", "저장 안 함"),
+                    selectedIndex = when (settings.sessionExitSave) {
+                        SessionExitSave.ASK -> 0
+                        SessionExitSave.ALWAYS -> 1
+                        SessionExitSave.NEVER -> 2
+                    },
+                    onSelect = {
+                        settings.updateSessionExitSave(
+                            when (it) {
+                                0 -> SessionExitSave.ASK
+                                1 -> SessionExitSave.ALWAYS
+                                else -> SessionExitSave.NEVER
+                            }
+                        )
+                    }
+                )
             }
 
             Spacer(Modifier.height(14.dp))
@@ -169,7 +203,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
             SectionLabel("정보")
             Spacer(Modifier.height(6.dp))
             SettingCard {
-                Text("산업안전기사 기출 v1.0.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                Text("산업안전기사 기출 v1.1.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
                 Spacer(Modifier.height(4.dp))
                 Text("문항 1,800 · 5개년(2017~2021) 15회차 · 완전 오프라인", style = MaterialTheme.typography.labelSmall, color = c.muted)
                 Text("이미지 출처: kinz.kr", style = MaterialTheme.typography.labelSmall, color = c.muted)

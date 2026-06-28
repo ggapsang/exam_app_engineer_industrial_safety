@@ -41,6 +41,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.Repository
+import com.daim.safetyexam.data.ResumeSnapshot
+import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.NavyIconButton
@@ -54,9 +56,11 @@ private data class ModeEntry(val title: String, val meta: String, val icon: Imag
 
 @Composable
 fun HomeScreen(
+    settings: SettingsStore,
     onExam: () -> Unit,
     onSubject: () -> Unit,
     onMock: () -> Unit,
+    onResume: () -> Unit,
     onWrong: () -> Unit,
     onFavorite: () -> Unit,
     onSearch: () -> Unit,
@@ -73,6 +77,7 @@ fun HomeScreen(
         }
     }
     val (wrongCount, favCount) = counts
+    val resume = ResumeSnapshot.fromJson(settings.resumeJson)
 
     Scaffold(
         containerColor = c.bg,
@@ -99,7 +104,7 @@ fun HomeScreen(
                 .padding(14.dp)
         ) {
             // 빠른 시작 그라데이션 카드
-            QuickStartCard(wrongCount, favCount, onWrong, onFavorite, onMock)
+            QuickStartCard(wrongCount, resume, onWrong, onResume, onMock)
 
             Spacer(Modifier.height(14.dp))
             SectionLabel("학습 모드")
@@ -132,9 +137,9 @@ fun HomeScreen(
 @Composable
 private fun QuickStartCard(
     wrongCount: Int,
-    favCount: Int,
+    resume: ResumeSnapshot?,
     onWrong: () -> Unit,
-    onFavorite: () -> Unit,
+    onResume: () -> Unit,
     onMock: () -> Unit
 ) {
     val c = MaterialTheme.appColors
@@ -148,25 +153,36 @@ private fun QuickStartCard(
         Text("빠른 시작", style = MaterialTheme.typography.labelLarge, color = Color(0xFFC7D2E6))
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuickButton("$wrongCount", "오답노트", false, Modifier.weight(1f), onWrong)
-            QuickButton("$favCount", "즐겨찾기", false, Modifier.weight(1f), onFavorite)
-            QuickButton("120", "모의고사", true, Modifier.weight(1f), onMock)
+            QuickButton("$wrongCount", "오답노트", false, true, Modifier.weight(1f), onWrong)
+            QuickButton(
+                value = if (resume != null) "${resume.percent}%" else "—",
+                label = "이어풀기",
+                primary = false,
+                enabled = resume != null,
+                modifier = Modifier.weight(1f),
+                onClick = onResume
+            )
+            QuickButton("120", "모의고사", true, true, Modifier.weight(1f), onMock)
         }
     }
 }
 
 @Composable
-private fun QuickButton(value: String, label: String, primary: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun QuickButton(value: String, label: String, primary: Boolean, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val c = MaterialTheme.appColors
     Column(
         modifier
             .clip(RoundedCornerShape(12.dp))
             .background(if (primary) c.amber else Color.White.copy(alpha = 0.10f))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 10.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, style = MaterialTheme.typography.headlineSmall, color = if (primary) c.navy else c.amber)
+        Text(
+            value,
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (primary) c.navy else if (enabled) c.amber else Color(0xFF6B7790)
+        )
         Spacer(Modifier.height(2.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = if (primary) c.navy else Color(0xFFC7D2E6))
     }

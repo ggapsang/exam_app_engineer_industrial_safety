@@ -77,14 +77,14 @@ val DarkAppColors = AppColors(
     chip = Color(0xFF222C38),
     onNavy = Color(0xFFFFFFFF),
     navySub = Color(0xFF9FB0D0),
-    choiceSelBg = Color(0xFF3A3014),
+    choiceSelBg = Color(0xFF2E2A1A),     // §2.3 다크 선택(채점 전) 배경
     choiceCorrectBg = Color(0xFF13312A),
     choiceWrongBg = Color(0xFF3A1F1B),
     expBg = Color(0xFF2A2516),
-    expBorder = Color(0xFF4A412A),
-    expText = Color(0xFFD8C9A0),
-    expRefText = Color(0xFFB59A5E),
-    expRefBorder = Color(0xFF4A412A),
+    expBorder = Color(0xFF4A4128),       // §2.2 해설 카드 테두리(다크)
+    expText = Color(0xFFE4DAC0),         // §2.2 해설 본문 텍스트(다크)
+    expRefText = Color(0xFFB7A678),      // §2.2 해설 참고줄(다크)
+    expRefBorder = Color(0xFF4A4128),
 )
 
 val LocalAppColors = staticCompositionLocalOf { LightAppColors }

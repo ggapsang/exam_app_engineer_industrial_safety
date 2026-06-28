@@ -63,18 +63,18 @@ private fun colorScheme(c: AppColors) = if (c.isDark) {
     )
 }
 
-/** 디자인 가이드 §3 타입 스케일 (폰트 "보통" 기준) */
+/** 디자인 가이드 v2.0 §3 타입 스케일 (폰트 "보통" 기준, 본문 교정값) */
 private fun baseTypography() = Typography(
-    titleLarge = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp),
-    displayLarge = TextStyle(fontSize = 46.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 46.sp),
-    headlineSmall = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.ExtraBold),
-    titleMedium = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.Bold),
-    bodyLarge = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 19.4.sp),
-    bodyMedium = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal, lineHeight = 17.sp),
-    bodySmall = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp),
-    labelLarge = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.4.sp),
-    labelMedium = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
-    labelSmall = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
+    titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp),  // 앱바 제목
+    displayLarge = TextStyle(fontSize = 54.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 54.sp),        // 점수
+    headlineSmall = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.ExtraBold),                           // 통계 수치
+    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),                                  // 보기/카드 제목
+    bodyLarge = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp),            // 문항 본문(stem)
+    bodyMedium = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Normal, lineHeight = 23.sp),             // 해설 본문
+    bodySmall = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp),
+    labelLarge = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.4.sp),      // 섹션 라벨
+    labelMedium = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),                              // 메타/캡션/번호
+    labelSmall = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),                               // 하단 탭
 )
 
 private fun Typography.scaled(scale: Float): Typography {

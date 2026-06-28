@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>시안 A — 다크모드 수정본</title>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;
+    background:#0a0e13; color:#e7eef5; padding:36px 16px 60px;}
+  .head{max-width:760px; margin:0 auto 26px;}
+  .head h1{font-size:21px; letter-spacing:-.4px; margin-bottom:6px; color:#fff;}
+  .head p{font-size:13px; color:#8a95a3; line-height:1.6;}
+  .head .fix{display:inline-block; margin-top:10px; font-size:11px; font-weight:700; color:#0f141b; background:#f2b04a; padding:4px 10px; border-radius:8px;}
+  .board{display:flex; flex-wrap:wrap; gap:30px; justify-content:center; max-width:760px; margin:0 auto; align-items:flex-start;}
+  .pw{display:flex; flex-direction:column; gap:10px; align-items:center;}
+  .pl{font-size:12px; font-weight:700; color:#8a95a3;}
+
+  /* DARK tokens (corrected) */
+  :root{
+    --navy:#16233f; --bg:#0f141b; --card:#1a222d; --chip:#222c38; --line:#2a3441;
+    --ink:#e7eef5; --muted:#8a95a3; --amber:#f2b04a; --green:#2dbe8c; --red:#f0735e;
+  }
+  .phone{width:300px; height:600px; background:var(--bg); border-radius:28px; border:9px solid #05080c;
+    overflow:hidden; position:relative; box-shadow:0 18px 40px -16px rgba(0,0,0,.7); display:flex; flex-direction:column;}
+  .sb{height:24px; background:var(--bg); color:var(--muted); display:flex; align-items:center; justify-content:space-between; padding:0 14px; font-size:10px; font-weight:600;}
+  .sb .d{display:flex; gap:3px;} .sb .d i{width:4px;height:4px;border-radius:50%;background:var(--muted); display:block;}
+  svg.ic{display:block;}
+  .bar{background:var(--navy); color:#fff; padding:11px 15px; display:flex; align-items:center; justify-content:space-between;}
+  .bar h3{font-size:14px; font-weight:800;} .bar .s{font-size:9px; color:#9fb0d0; margin-top:2px;}
+  .ico{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;}
+  .prog{height:5px; background:var(--chip); border-radius:3px; margin:0 13px; overflow:hidden;}
+  .prog i{display:block; height:100%; width:10%; background:var(--amber);}
+  .body{flex:1; padding:13px; display:flex; flex-direction:column; gap:11px; overflow:hidden;}
+  .chip{display:inline-block; align-self:flex-start; background:var(--chip); color:#aeb9c5; font-size:9.5px; font-weight:700; padding:4px 9px; border-radius:18px;}
+  .stem{font-size:12.5px; line-height:1.55; font-weight:600; color:var(--ink);}
+
+  /* CHOICE — corrected dark states. Text always light. */
+  .ch{display:flex; gap:8px; align-items:center; border:1.5px solid var(--line); background:var(--card);
+    border-radius:11px; padding:9px 10px; font-size:11.5px; color:var(--ink);}
+  .ch .no{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);
+    font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ch .mk{margin-left:auto; flex-shrink:0;}
+  /* selected (pre-grade) — the previously-broken state */
+  .ch.sel{background:#2e2a1a; border-color:var(--amber);}
+  .ch.sel .no{background:var(--amber); border-color:var(--amber); color:#0f141b;}
+  /* correct */
+  .ch.ok{background:#13312a; border-color:var(--green);}
+  .ch.ok .no{background:var(--green); border-color:var(--green); color:#07140f;}
+  .ch.ok .mk{color:var(--green);}
+  /* wrong */
+  .ch.no2{background:#3a1f1b; border-color:var(--red);}
+  .ch.no2 .no{background:var(--red); border-color:var(--red); color:#1a0e0b;}
+  .ch.no2 .mk{color:var(--red);}
+
+  .exp{background:#2a2516; border:1px solid #4a4128; border-radius:12px; padding:11px;}
+  .exp .h{font-size:10.5px; font-weight:800; color:var(--amber); display:flex; align-items:center; gap:6px;}
+  .exp .b{font-size:11px; line-height:1.55; color:#e4dac0; margin-top:6px;}
+  .exp .rf{font-size:9px; color:#b7a678; margin-top:7px; padding-top:6px; border-top:1px dashed #5a5031;}
+  .acts{display:flex; gap:8px; padding:0 13px 6px;}
+  .btn{flex:1; text-align:center; font-size:11px; font-weight:800; padding:11px; border-radius:12px;}
+  .btn.sec{background:var(--chip); color:var(--ink);}
+  .btn.acc{background:var(--amber); color:#0f141b;}
+
+  /* home bits */
+  .quick{background:linear-gradient(135deg,#16233f,#223a66); border-radius:15px; padding:14px;}
+  .quick .t{font-size:10px;font-weight:800;color:#c7d2e6;letter-spacing:.4px;}
+  .qrow{display:flex; gap:7px; margin-top:10px;}
+  .qb{flex:1; background:rgba(255,255,255,.08); border-radius:11px; padding:9px 6px; text-align:center;}
+  .qb b{font-size:16px; color:var(--amber); display:block;} .qb span{font-size:8.5px; color:#c7d2e6;}
+  .qb.p{background:var(--amber);} .qb.p b,.qb.p span{color:#16233f;}
+  .lab{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.4px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .mc{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:11px; display:flex; flex-direction:column; gap:6px;}
+  .mc .mi{width:30px;height:30px;border-radius:9px;background:var(--chip);display:flex;align-items:center;justify-content:center;}
+  .mc .mt{font-size:11.5px; font-weight:700; color:var(--ink);} .mc .md{font-size:8.5px; color:var(--muted);}
+  .nav{height:48px; background:#131a23; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-around;}
+  .nav .n{font-size:8.5px; font-weight:600; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:2px;}
+  .nav .n.on{color:#f2b04a;}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>시안 A — 다크모드 수정본</h1>
+  <p>선택지 텍스트가 안 보이던 문제 교정. 핵심은 <b style="color:#f2b04a">다크에서는 선택지 배경을 어둡게 + 텍스트는 항상 밝게(#E7EEF5)</b> 고정하고, 상태는 테두리 색·채운 번호·기호(✓/✕)로 표시하는 것입니다.</p>
+  <span class="fix">수정: 선택(채점 전) · 정답 · 오답 · 해설 본문 전경색 교정</span>
+</div>
+
+<div class="board">
+
+  <!-- QUESTION CARD (focus of the fix) -->
+  <div class="pw">
+    <div class="pl">문항 카드 — 선택지 4상태</div>
+    <div class="phone">
+      <div class="sb"><span>9:41</span><div class="d"><i></i><i></i><i></i></div></div>
+      <div class="bar">
+        <div class="ico"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div style="text-align:center;"><h3>2021년 1회 · 12번</h3><div class="s">12 / 120</div></div>
+        <div class="ico"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="#f2b04a" stroke="#f2b04a" stroke-width="1.5"><path d="m12 2 3 6.5 7 .9-5 4.8 1.3 7L12 18l-6.6 3.2L6.7 14l-5-4.8 7-.9z"/></svg></div>
+      </div>
+      <div class="prog"><i></i></div>
+      <div class="body">
+        <span class="chip">2과목 · 인간공학</span>
+        <div class="stem">FTA의 논리게이트 중, 입력사상 하나라도 발생하면 출력사상이 발생하는 것은?</div>
+        <div class="ch"><span class="no">1</span>AND 게이트</div>
+        <div class="ch sel"><span class="no">2</span>억제 게이트<span class="mk" style="font-size:9px;color:#f2b04a;font-weight:800;">선택</span></div>
+        <div class="ch no2"><span class="no">2</span>억제 게이트
+          <span class="mk"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f0735e" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg></span></div>
+        <div class="ch ok"><span class="no">3</span>OR 게이트
+          <span class="mk"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2dbe8c" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+        <div class="ch"><span class="no">4</span>부정 게이트</div>
+        <div class="exp">
+          <div class="h"><svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f2b04a" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg> 정답 ③ 해설</div>
+          <div class="b">OR 게이트는 입력 중 하나 이상이면 출력. AND는 모든 입력이 동시에 발생해야 출력된다.</div>
+          <div class="rf">참고 · KOSHA GUIDE X-12</div>
+        </div>
+      </div>
+      <div class="acts"><div class="btn sec">이전</div><div class="btn acc">다음</div></div>
+    </div>
+  </div>
+
+  <!-- HOME (dark) -->
+  <div class="pw">
+    <div class="pl">홈</div>
+    <div class="phone">
+      <div class="sb"><span>9:41</span><div class="d"><i></i><i></i><i></i></div></div>
+      <div class="bar"><div><h3 style="font-size:15px;">산업안전기사 기출</h3><div class="s">1,800문항 오프라인</div></div>
+        <div class="ico"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-7-7"/></svg></div></div>
+      <div class="body">
+        <div class="quick"><div class="t">빠른 시작</div>
+          <div class="qrow"><div class="qb"><b>23</b><span>오답노트</span></div><div class="qb"><b>37%</b><span>이어풀기</span></div><div class="qb p"><b>120</b><span>모의고사</span></div></div>
+        </div>
+        <div class="lab">학습 모드</div>
+        <div class="grid">
+          <div class="mc"><div class="mi"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7eef5" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></div><div class="mt">회차별</div><div class="md">15회·120</div></div>
+          <div class="mc"><div class="mi"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7eef5" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><div class="mt">과목별</div><div class="md">6과목·300</div></div>
+          <div class="mc"><div class="mi"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7eef5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="mt">모의고사</div><div class="md">2시간30분</div></div>
+          <div class="mc"><div class="mi"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0735e" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></div><div class="mt">오답노트</div><div class="md">틀린 23</div></div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="n on"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2b04a" stroke-width="2"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>홈</div>
+        <div class="n"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a95a3" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>통계</div>
+        <div class="n"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a95a3" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M5 5l2 2M17 17l2 2M1 12h4M19 12h4"/></svg>설정</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -9,6 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.daim.safetyexam.data.QuestionFull
 import com.daim.safetyexam.data.Repository
+import com.daim.safetyexam.data.ResumeSnapshot
 import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.StudyMode
 import com.daim.safetyexam.data.SubjectStat
@@ -43,6 +44,9 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     var finished by mutableStateOf(false); private set
     var result by mutableStateOf<SessionResult?>(null); private set
 
+    /** 이어풀기 스냅샷 라벨용 (예: "2021년 1회" / "기계위험방지") */
+    var sessionLabel by mutableStateOf(""); private set
+
     // 모의고사 타이머
     var timerEnabled by mutableStateOf(false); private set
     var remainingSec by mutableStateOf(0); private set
@@ -56,6 +60,12 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     val current: QuestionFull? get() = questions.getOrNull(currentIndex)
     val answeredCount: Int get() = questions.count { answers.containsKey(it.id) }
 
+    /** 이어풀기 대상 모드인지 (회차/과목만) */
+    val isResumable: Boolean get() = mode == StudyMode.EXAM || mode == StudyMode.SUBJECT
+
+    /** 지금까지 응답한 문항 중 오답 수 */
+    fun answeredWrong(): Int = questions.count { val s = answers[it.id]; s != null && s != it.answerNo }
+
     // ---- 진입 지점 (홈/목록에서 호출) ----
 
     fun startExam(examId: Int) =
@@ -64,22 +74,29 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     fun startSubject(subjectId: Int, count: Int, order: String) =
         launchStart(StudyMode.SUBJECT) { repo.subjectQuestionIds(subjectId, count, order) }
 
-    fun startMock() =
-        launchStart(StudyMode.MOCK, withTimer = true, timerSec = 9000) { repo.mockQuestionIds() }
+    /** 모의고사. instant=true 면 즉시 채점(학습용), 기본은 일괄(실전형) */
+    fun startMock(instant: Boolean) =
+        launchStart(StudyMode.MOCK, withTimer = true, timerSec = 9000, instantOverride = instant) { repo.mockQuestionIds() }
 
     /** 이미 결정된 문항 ID 목록으로 시작 (오답노트/즐겨찾기 일괄 풀이) */
     fun startFromIds(newMode: StudyMode, ids: List<Int>) =
         launchStart(newMode) { ids }
 
+    /** 이어풀기 — 저장된 스냅샷으로 복원 */
+    fun resume(snap: ResumeSnapshot) =
+        launchStart(snap.mode, restore = snap) { snap.ids }
+
     private fun launchStart(
         newMode: StudyMode,
         withTimer: Boolean = false,
         timerSec: Int = 9000,
+        instantOverride: Boolean? = null,
+        restore: ResumeSnapshot? = null,
         idProvider: suspend () -> List<Int>
     ) {
         timerJob?.cancel()
         mode = newMode
-        instantGrading = settings.instantGrading && newMode != StudyMode.MOCK
+        instantGrading = instantOverride ?: (settings.instantGrading && newMode != StudyMode.MOCK)
         timerEnabled = withTimer
         remainingSec = timerSec
         finished = false
@@ -89,6 +106,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         answers.clear()
         revealed.clear()
         elapsedByQ.clear()
+        sessionLabel = ""
         loading = true
         startedAt = nowText()
         sessionStartMs = System.currentTimeMillis()
@@ -100,6 +118,16 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
                 repo.loadQuestions(ids)
             }
             questions = loaded
+            sessionLabel = when (newMode) {
+                StudyMode.EXAM -> loaded.firstOrNull()?.examTitle ?: ""
+                StudyMode.SUBJECT -> loaded.firstOrNull()?.subjectShort ?: ""
+                else -> ""
+            }
+            if (restore != null) {
+                answers.putAll(restore.answers)
+                if (instantGrading) restore.answers.keys.forEach { revealed[it] = true }
+                currentIndex = restore.index.coerceIn(0, (loaded.size - 1).coerceAtLeast(0))
+            }
             loading = false
             if (withTimer && loaded.isNotEmpty()) startTimer()
         }
@@ -136,11 +164,43 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         elapsedByQ[q.id] = (elapsedByQ[q.id] ?: 0L) + (now - enterQuestionMs)
     }
 
+    /**
+     * 회차/과목 풀이 중단 시 호출. 진행 위치(이어풀기)는 항상 저장하고,
+     * saveWrong=true 면 이번 세션의 (응답한) 오답을 user_attempts에 기록한다.
+     */
+    fun exitWithSave(saveWrong: Boolean) {
+        if (!isResumable) return
+        accrueElapsed()
+        timerJob?.cancel()
+        // 진행 위치 스냅샷 저장 (이어풀기)
+        val snap = ResumeSnapshot(mode, sessionLabel, questions.map { it.id }, HashMap(answers), currentIndex)
+        settings.saveResume(snap.toJson())
+        if (saveWrong) {
+            val snapshotAnswers = HashMap(answers)
+            val elapsed = HashMap(elapsedByQ)
+            val qs = questions
+            viewModelScope.launch {
+                withContext(Dispatchers.IO) {
+                    for (q in qs) {
+                        val sel = snapshotAnswers[q.id] ?: continue
+                        repo.recordAttempt(q.id, sel, sel == q.answerNo, elapsed[q.id] ?: 0L)
+                    }
+                }
+            }
+        }
+    }
+
+    /** 저장 없이 세션 폐기 (모의고사 등 비-이어풀기 모드 중단 시 타이머 정지) */
+    fun abandonSession() {
+        timerJob?.cancel()
+    }
+
     fun finish() {
         if (finished) return
         accrueElapsed()
         timerJob?.cancel()
         finished = true
+        settings.clearResume()  // 완료했으므로 이어풀기 스냅샷 제거
 
         viewModelScope.launch {
             val perSubjectTotal = HashMap<Int, Int>()

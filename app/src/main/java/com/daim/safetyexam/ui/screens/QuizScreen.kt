@@ -1,6 +1,9 @@
 package com.daim.safetyexam.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,16 +14,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,26 +41,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.Repository
+import com.daim.safetyexam.data.SessionExitSave
+import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.StudyMode
 import com.daim.safetyexam.ui.AccentButton
 import com.daim.safetyexam.ui.ChoiceItem
 import com.daim.safetyexam.ui.ChoiceState
 import com.daim.safetyexam.ui.ExplanationCard
-import com.daim.safetyexam.ui.FavoriteStar
+import com.daim.safetyexam.ui.PrimaryButton
 import com.daim.safetyexam.ui.ProgressTrack
 import com.daim.safetyexam.ui.QImage
 import com.daim.safetyexam.ui.QuizSessionViewModel
+import com.daim.safetyexam.ui.SafetyCheckbox
 import com.daim.safetyexam.ui.SafetyChip
+import com.daim.safetyexam.ui.SafetyToggle
 import com.daim.safetyexam.ui.SecondaryButton
+import com.daim.safetyexam.ui.SheetGrip
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizScreen(
     vm: QuizSessionViewModel,
@@ -58,15 +77,32 @@ fun QuizScreen(
 ) {
     val context = LocalContext.current
     val c = MaterialTheme.appColors
+    val settings = remember { SettingsStore.get(context) }
     val repo = remember { Repository.get(context) }
     val scope = rememberCoroutineScope()
 
-    var showExitDialog by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }   // 모의고사/오답/즐겨찾기 단순 중단
+    var showExitSheet by remember { mutableStateOf(false) }    // 회차/과목 중단 시 오답 저장 시트
     var showSubmitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(vm.finished, vm.result) {
         if (vm.finished && vm.result != null) onFinished()
     }
+
+    // 중단 처리: 회차/과목은 정책(ASK/ALWAYS/NEVER)에 따라, 그 외는 단순 확인
+    fun handleExit() {
+        if (vm.isResumable) {
+            when (settings.sessionExitSave) {
+                SessionExitSave.ASK -> showExitSheet = true
+                SessionExitSave.ALWAYS -> { vm.exitWithSave(true); onExit() }
+                SessionExitSave.NEVER -> { vm.exitWithSave(false); onExit() }
+            }
+        } else {
+            showExitDialog = true
+        }
+    }
+
+    BackHandler(enabled = !vm.finished) { handleExit() }
 
     if (vm.loading) {
         Box(Modifier.fillMaxSize().background(c.bg), contentAlignment = Alignment.Center) {
@@ -105,7 +141,7 @@ fun QuizScreen(
                     timer = if (vm.timerEnabled) formatTime(vm.remainingSec) else null,
                     timerWarn = vm.remainingSec < 600,
                     isFav = isFav,
-                    onBack = { showExitDialog = true },
+                    onBack = { handleExit() },
                     onToggleFav = { toggleFav() }
                 )
                 Box(Modifier.background(c.bg).padding(horizontal = 14.dp, vertical = 8.dp)) {
@@ -192,8 +228,23 @@ fun QuizScreen(
             onDismissRequest = { showExitDialog = false },
             title = { Text("풀이를 중단할까요?", color = c.ink) },
             text = { Text("지금까지의 응답은 저장되지 않습니다.", color = c.muted) },
-            confirmButton = { TextButton(onClick = { showExitDialog = false; onExit() }) { Text("나가기", color = c.red) } },
+            confirmButton = { TextButton(onClick = { showExitDialog = false; vm.abandonSession(); onExit() }) { Text("나가기", color = c.red) } },
             dismissButton = { TextButton(onClick = { showExitDialog = false }) { Text("계속 풀기", color = c.navy) } }
+        )
+    }
+
+    if (showExitSheet) {
+        ExitSaveSheet(
+            answered = vm.answeredCount,
+            wrong = vm.answeredWrong(),
+            metaLabel = "${vm.sessionLabel} · ${vm.answeredCount}/$total 풀이 중",
+            onContinue = { showExitSheet = false },
+            onExit = { save, dontAskAgain ->
+                if (dontAskAgain) settings.updateSessionExitSave(if (save) SessionExitSave.ALWAYS else SessionExitSave.NEVER)
+                vm.exitWithSave(save)
+                showExitSheet = false
+                onExit()
+            }
         )
     }
 
@@ -207,6 +258,103 @@ fun QuizScreen(
             confirmButton = { TextButton(onClick = { showSubmitDialog = false; vm.finish() }) { Text("제출", color = c.navy) } },
             dismissButton = { TextButton(onClick = { showSubmitDialog = false }) { Text("취소", color = c.muted) } }
         )
+    }
+}
+
+/** §5.14 회차/과목 풀이 중단 시트 — 오답 저장 토글 + 이어풀기 안내 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExitSaveSheet(
+    answered: Int,
+    wrong: Int,
+    metaLabel: String,
+    onContinue: () -> Unit,
+    onExit: (save: Boolean, dontAskAgain: Boolean) -> Unit
+) {
+    val c = MaterialTheme.appColors
+    val sheetState = rememberModalBottomSheetState()
+    var save by remember { mutableStateOf(true) }
+    var dontAsk by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onContinue,
+        sheetState = sheetState,
+        containerColor = c.card,
+        dragHandle = { Box(Modifier.fillMaxWidth().padding(top = 10.dp), contentAlignment = Alignment.Center) { SheetGrip() } }
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
+            Text("풀이를 중단할까요?", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize), color = c.ink)
+            Spacer(Modifier.height(2.dp))
+            Text(metaLabel, style = MaterialTheme.typography.labelMedium, color = c.muted)
+
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SummaryChip("$answered", "푼 문항", c.navy, Modifier.weight(1f))
+                SummaryChip("$wrong", "오답", c.red, Modifier.weight(1f))
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(13.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (save) "오답 ${wrong}개를 오답노트에 저장" else "오답을 저장하지 않고 나가기",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                    Text(if (save) "끄면 이번 풀이의 오답은 저장되지 않습니다" else "이번 풀이의 오답 ${wrong}개가 오답노트에 추가되지 않습니다",
+                        style = MaterialTheme.typography.labelMedium, color = c.muted)
+                }
+                Spacer(Modifier.width(10.dp))
+                SafetyToggle(checked = save, onCheckedChange = { save = it })
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp)).background(if (c.isDark) c.chip else Color(0xFFEEF3FB)).padding(11.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(Icons.Filled.Info, contentDescription = null, tint = c.navy2, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("진행 위치는 자동 저장되어 이어풀기로 다시 시작할 수 있습니다.", style = MaterialTheme.typography.labelMedium, color = c.navy2)
+            }
+
+            Spacer(Modifier.height(10.dp))
+            SafetyCheckbox(checked = dontAsk, onCheckedChange = { dontAsk = it }, label = "다음부터 묻지 않기 (설정에서 변경)")
+
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth().navigationBarsPadding(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton("계속 풀기", Modifier.weight(1f)) { onContinue() }
+                if (save) {
+                    PrimaryButton("나가기", Modifier.weight(1f)) { onExit(true, dontAsk) }
+                } else {
+                    WarnButton("저장 없이 나가기", Modifier.weight(1f)) { onExit(false, dontAsk) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryChip(value: String, label: String, valueColor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.appColors
+    Column(
+        modifier.clip(RoundedCornerShape(12.dp)).background(c.chip).padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(value, style = MaterialTheme.typography.headlineSmall, color = valueColor)
+        Spacer(Modifier.height(2.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = c.muted)
+    }
+}
+
+@Composable
+private fun WarnButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val c = MaterialTheme.appColors
+    Box(
+        modifier.clip(RoundedCornerShape(12.dp)).background(c.choiceWrongBg).clickable(onClick = onClick).padding(vertical = 13.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.red)
     }
 }
 
