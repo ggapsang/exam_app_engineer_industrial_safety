@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 enum class FontScale(val scale: Float, val label: String) {
-    SMALL(0.9f, "작게"), NORMAL(1.0f, "보통"), LARGE(1.2f, "크게")
+    SMALL(0.9f, "작게"), NORMAL(1.0f, "보통"), LARGE(1.15f, "크게")
 }
 
 /** 설정값. Compose 상태로 노출해 즉시 반영. */

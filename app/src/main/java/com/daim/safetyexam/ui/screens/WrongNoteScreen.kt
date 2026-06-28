@@ -1,5 +1,8 @@
 package com.daim.safetyexam.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,14 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,12 +29,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.Repository
 import com.daim.safetyexam.data.WrongNoteItem
+import com.daim.safetyexam.ui.AccentButton
 import com.daim.safetyexam.ui.AppTopBar
+import com.daim.safetyexam.ui.SafetyChip
+import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,7 +49,7 @@ fun WrongNoteScreen(
     onPlayAll: (List<Int>) -> Unit
 ) {
     val context = LocalContext.current
-    // 0: 1회+, 1: 2회+, 2: 최근7일
+    val c = MaterialTheme.appColors
     var filter by remember { mutableIntStateOf(0) }
 
     val items by produceState(initialValue = emptyList<WrongNoteItem>(), filter) {
@@ -57,58 +63,81 @@ fun WrongNoteScreen(
         }
     }
 
-    Scaffold(topBar = { AppTopBar("오답노트", onBack = onBack) }) { pad ->
+    Scaffold(containerColor = c.bg, topBar = { AppTopBar("오답노트", onBack = onBack) }) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             Row(
-                Modifier.fillMaxWidth().padding(16.dp),
+                Modifier.fillMaxWidth().padding(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(filter == 0, { filter = 0 }, label = { Text("1회 이상") })
-                FilterChip(filter == 1, { filter = 1 }, label = { Text("2회 이상") })
-                FilterChip(filter == 2, { filter = 2 }, label = { Text("최근 7일") })
+                FilterPill("1회 이상", filter == 0, Modifier.weight(1f)) { filter = 0 }
+                FilterPill("2회 이상", filter == 1, Modifier.weight(1f)) { filter = 1 }
+                FilterPill("최근 7일", filter == 2, Modifier.weight(1f)) { filter = 2 }
             }
 
             if (items.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("틀린 문항이 없습니다. 잘하고 있어요!", style = MaterialTheme.typography.bodyLarge)
-                }
+                EmptyState("아직 틀린 문항이 없습니다.\n회차별 풀이로 시작해 보세요.")
                 return@Column
             }
 
-            Button(
-                onClick = { onPlayAll(items.map { it.questionId }) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            ) { Text("전체 다시 풀기 (${items.size}문항)") }
-
-            Spacer(Modifier.padding(4.dp))
+            Box(Modifier.padding(horizontal = 14.dp)) {
+                AccentButton("전체 다시 풀기 (${items.size}문항)", Modifier.fillMaxWidth()) {
+                    onPlayAll(items.map { it.questionId })
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             LazyColumn(
-                Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                Modifier.fillMaxSize().padding(horizontal = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(items) { item ->
-                    Card(onClick = { onOpen(item.questionId) }, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (item.isFavorite) {
-                                    Icon(Icons.Filled.Star, contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.padding(end = 4.dp))
-                                }
-                                Text("[${item.subjectShort}] ${item.examTitle} ${item.qNumber}번",
-                                    style = MaterialTheme.typography.labelLarge)
-                                Spacer(Modifier.weight(1f))
-                                Text("${item.wrongCount}회 오답",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontWeight = FontWeight.Bold)
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(c.card)
+                            .border(1.dp, c.line, RoundedCornerShape(14.dp))
+                            .clickable { onOpen(item.questionId) }
+                            .padding(14.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (item.isFavorite) {
+                                Icon(Icons.Filled.Star, contentDescription = null, tint = c.amber, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.size(4.dp))
                             }
-                            Spacer(Modifier.padding(2.dp))
-                            Text(item.stemPreview + "…", style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 2)
+                            SafetyChip(item.subjectShort)
+                            Spacer(Modifier.size(6.dp))
+                            Text("${item.examTitle} ${item.qNumber}번", style = MaterialTheme.typography.labelMedium, color = c.muted)
+                            Spacer(Modifier.weight(1f))
+                            Text("${item.wrongCount}회 오답", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.red)
                         }
+                        Spacer(Modifier.size(6.dp))
+                        Text(item.stemPreview + "…", style = MaterialTheme.typography.bodyMedium, color = c.ink, maxLines = 2)
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FilterPill(text: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val c = MaterialTheme.appColors
+    Box(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (active) c.navy else c.chip)
+            .clickable(onClick = onClick)
+            .padding(vertical = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (active) c.onNavy else c.navy)
+    }
+}
+
+@Composable
+internal fun EmptyState(message: String) {
+    val c = MaterialTheme.appColors
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(message, style = MaterialTheme.typography.bodyLarge, color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

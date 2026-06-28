@@ -1,7 +1,9 @@
 package com.daim.safetyexam
 
+import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +20,8 @@ import com.daim.safetyexam.ui.theme.SafetyExamTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // 앱바가 네이비이므로 상태바 아이콘은 항상 밝게(흰색) 유지
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT))
         val settings = SettingsStore.get(this)
         setContent {
             SafetyExamTheme(themeMode = settings.theme, fontScale = settings.fontScale) {

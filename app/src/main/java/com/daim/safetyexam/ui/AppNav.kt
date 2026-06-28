@@ -82,7 +82,10 @@ fun AppNav(quizVm: QuizSessionViewModel, settings: SettingsStore) {
         composable(Routes.RESULT) {
             ResultScreen(
                 vm = quizVm,
-                onHome = { nav.popBackStack(Routes.HOME, inclusive = false) }
+                onHome = { nav.popBackStack(Routes.HOME, inclusive = false) },
+                onReviewWrong = {
+                    nav.navigate(Routes.WRONG) { popUpTo(Routes.HOME) { inclusive = false } }
+                }
             )
         }
 
@@ -116,11 +119,22 @@ fun AppNav(quizVm: QuizSessionViewModel, settings: SettingsStore) {
         }
 
         composable(Routes.STATS) {
-            StatsScreen(onBack = { nav.popBackStack() })
+            StatsScreen(
+                onHome = { nav.popBackStack(Routes.HOME, inclusive = false) },
+                onSettings = {
+                    nav.navigate(Routes.SETTINGS) { launchSingleTop = true; popUpTo(Routes.HOME) { inclusive = false } }
+                }
+            )
         }
 
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { nav.popBackStack() }, settings = settings)
+            SettingsScreen(
+                settings = settings,
+                onHome = { nav.popBackStack(Routes.HOME, inclusive = false) },
+                onStats = {
+                    nav.navigate(Routes.STATS) { launchSingleTop = true; popUpTo(Routes.HOME) { inclusive = false } }
+                }
+            )
         }
 
         composable(
