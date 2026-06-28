@@ -60,7 +60,7 @@ fun ExamListScreen(onBack: () -> Unit, onStartExam: (Int) -> Unit) {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("${exam.year}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.navy)
+                    Text("${exam.year}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.accentFg)
                     Text("${exam.session}회", style = MaterialTheme.typography.labelMedium, color = c.muted)
                 }
             }

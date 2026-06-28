@@ -204,7 +204,7 @@ private fun ModeCard(m: ModeEntry, modifier: Modifier = Modifier) {
             Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(c.chip),
             contentAlignment = Alignment.Center
         ) {
-            Icon(m.icon, contentDescription = m.title, tint = if (m.accentRed) c.red else c.navy, modifier = Modifier.size(18.dp))
+            Icon(m.icon, contentDescription = m.title, tint = if (m.accentRed) c.red else c.accentFg, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.height(8.dp))
         Text(m.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)

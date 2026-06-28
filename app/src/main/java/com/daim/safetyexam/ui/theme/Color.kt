@@ -23,6 +23,11 @@ data class AppColors(
     val chip: Color,
     val onNavy: Color,
     val navySub: Color,          // 앱바 보조 텍스트
+    // 다크 시인성 보정용 의미 토큰 (라이트=네이비, 다크=밝은 톤)
+    val accentFg: Color,         // 카드/칩 위 강조 텍스트·아이콘 (네이비 대체)
+    val selFill: Color,          // 선택/활성 칩·세그먼트 배경
+    val onSelFill: Color,        // selFill 위 텍스트
+    val navActive: Color,        // 하단 탭 활성색
     // 선택지 파생색
     val choiceSelBg: Color,
     val choiceCorrectBg: Color,
@@ -51,6 +56,10 @@ val LightAppColors = AppColors(
     chip = Color(0xFFEEF1F7),
     onNavy = Color(0xFFFFFFFF),
     navySub = Color(0xFF9FB0D0),
+    accentFg = Color(0xFF16233F),
+    selFill = Color(0xFF16233F),
+    onSelFill = Color(0xFFFFFFFF),
+    navActive = Color(0xFF16233F),
     choiceSelBg = Color(0xFFFFF6E6),
     choiceCorrectBg = Color(0xFFEAFAF3),
     choiceWrongBg = Color(0xFFFDEEEB),
@@ -77,6 +86,10 @@ val DarkAppColors = AppColors(
     chip = Color(0xFF222C38),
     onNavy = Color(0xFFFFFFFF),
     navySub = Color(0xFF9FB0D0),
+    accentFg = Color(0xFFE7EEF5),        // 다크: 강조 텍스트는 밝게 (네이비 금지)
+    selFill = Color(0xFFF2B04A),         // 다크: 활성 배경은 앰버
+    onSelFill = Color(0xFF0F141B),       // 앰버 위 어두운 글자
+    navActive = Color(0xFFF2B04A),       // 다크: 활성 탭은 앰버
     choiceSelBg = Color(0xFF2E2A1A),     // §2.3 다크 선택(채점 전) 배경
     choiceCorrectBg = Color(0xFF13312A),
     choiceWrongBg = Color(0xFF3A1F1B),

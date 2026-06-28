@@ -97,7 +97,7 @@ fun ResultScreen(vm: QuizSessionViewModel, onHome: () -> Unit, onReviewWrong: ()
                         }
                     },
                     style = MaterialTheme.typography.displayLarge,
-                    color = c.navy
+                    color = c.accentFg
                 )
                 Spacer(Modifier.height(4.dp))
                 Text("합격선 60점 · 정답 ${result.correct} / ${result.total}", style = MaterialTheme.typography.labelMedium, color = c.muted)

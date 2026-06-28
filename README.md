@@ -112,4 +112,3 @@ app/src/main/java/com/daim/safetyexam/
 ## 라이선스 / 면책
 
 - 학습 데이터는 기기 내부에만 저장되며 외부로 전송되지 않습니다.
-- 이미지 출처: kinz.kr

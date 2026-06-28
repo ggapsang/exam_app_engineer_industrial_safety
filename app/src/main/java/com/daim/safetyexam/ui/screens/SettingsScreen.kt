@@ -206,7 +206,6 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                 Text("산업안전기사 기출 v1.1.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
                 Spacer(Modifier.height(4.dp))
                 Text("문항 1,800 · 5개년(2017~2021) 15회차 · 완전 오프라인", style = MaterialTheme.typography.labelSmall, color = c.muted)
-                Text("이미지 출처: kinz.kr", style = MaterialTheme.typography.labelSmall, color = c.muted)
                 Text("학습 데이터는 기기 내부에만 저장되며 외부로 전송되지 않습니다.", style = MaterialTheme.typography.labelSmall, color = c.muted)
             }
             Spacer(Modifier.height(16.dp))
@@ -259,12 +258,12 @@ private fun Segmented(options: List<String>, selectedIndex: Int, onSelect: (Int)
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (active) c.navy else Color.Transparent)
+                    .background(if (active) c.selFill else Color.Transparent)
                     .clickable { onSelect(i) }
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (active) c.onNavy else c.navy)
+                Text(label, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (active) c.onSelFill else c.accentFg)
             }
         }
     }
@@ -280,7 +279,7 @@ private fun PillButton(text: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp)
     ) {
-        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.navy)
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.accentFg)
     }
 }
 
@@ -311,7 +310,7 @@ private fun ResetDialog(onDismiss: () -> Unit, onReset: (Int) -> Unit) {
             Column {
                 listOf("풀이 기록만", "즐겨찾기만", "메모만", "전부 초기화").forEachIndexed { i, label ->
                     TextButton(onClick = { onReset(i) }, modifier = Modifier.fillMaxWidth()) {
-                        Text(label, color = if (i == 3) c.red else c.navy, modifier = Modifier.fillMaxWidth())
+                        Text(label, color = if (i == 3) c.red else c.accentFg, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }

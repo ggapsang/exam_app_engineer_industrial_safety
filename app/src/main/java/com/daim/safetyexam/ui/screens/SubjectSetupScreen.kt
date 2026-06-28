@@ -122,11 +122,11 @@ private fun SelectChip(text: String, active: Boolean, modifier: Modifier = Modif
     Box(
         modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(if (active) c.navy else c.chip)
+            .background(if (active) c.selFill else c.chip)
             .clickable(onClick = onClick)
             .padding(vertical = 11.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (active) c.onNavy else c.navy)
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (active) c.onSelFill else c.accentFg)
     }
 }

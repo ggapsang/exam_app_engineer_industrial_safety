@@ -229,7 +229,7 @@ fun QuizScreen(
             title = { Text("풀이를 중단할까요?", color = c.ink) },
             text = { Text("지금까지의 응답은 저장되지 않습니다.", color = c.muted) },
             confirmButton = { TextButton(onClick = { showExitDialog = false; vm.abandonSession(); onExit() }) { Text("나가기", color = c.red) } },
-            dismissButton = { TextButton(onClick = { showExitDialog = false }) { Text("계속 풀기", color = c.navy) } }
+            dismissButton = { TextButton(onClick = { showExitDialog = false }) { Text("계속 풀기", color = c.accentFg) } }
         )
     }
 
@@ -255,7 +255,7 @@ fun QuizScreen(
             onDismissRequest = { showSubmitDialog = false },
             title = { Text("제출하고 채점할까요?", color = c.ink) },
             text = { Text(if (unanswered > 0) "미응답 $unanswered 문항은 오답 처리됩니다." else "모든 문항에 응답했습니다.", color = c.muted) },
-            confirmButton = { TextButton(onClick = { showSubmitDialog = false; vm.finish() }) { Text("제출", color = c.navy) } },
+            confirmButton = { TextButton(onClick = { showSubmitDialog = false; vm.finish() }) { Text("제출", color = c.accentFg) } },
             dismissButton = { TextButton(onClick = { showSubmitDialog = false }) { Text("취소", color = c.muted) } }
         )
     }
@@ -289,7 +289,7 @@ private fun ExitSaveSheet(
 
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SummaryChip("$answered", "푼 문항", c.navy, Modifier.weight(1f))
+                SummaryChip("$answered", "푼 문항", c.accentFg, Modifier.weight(1f))
                 SummaryChip("$wrong", "오답", c.red, Modifier.weight(1f))
             }
 
@@ -313,9 +313,9 @@ private fun ExitSaveSheet(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp)).background(if (c.isDark) c.chip else Color(0xFFEEF3FB)).padding(11.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                Icon(Icons.Filled.Info, contentDescription = null, tint = c.navy2, modifier = Modifier.size(15.dp))
+                Icon(Icons.Filled.Info, contentDescription = null, tint = c.accentFg, modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("진행 위치는 자동 저장되어 이어풀기로 다시 시작할 수 있습니다.", style = MaterialTheme.typography.labelMedium, color = c.navy2)
+                Text("진행 위치는 자동 저장되어 이어풀기로 다시 시작할 수 있습니다.", style = MaterialTheme.typography.labelMedium, color = c.accentFg)
             }
 
             Spacer(Modifier.height(10.dp))

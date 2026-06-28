@@ -140,7 +140,7 @@ private fun StatBox(value: String, label: String, modifier: Modifier = Modifier)
             .padding(vertical = 10.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, style = MaterialTheme.typography.headlineSmall, color = c.navy)
+        Text(value, style = MaterialTheme.typography.headlineSmall, color = c.accentFg)
         Spacer(Modifier.height(2.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = c.muted)
     }

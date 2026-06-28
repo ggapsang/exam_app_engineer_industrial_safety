@@ -131,7 +131,7 @@ fun MemoField(value: String, onValueChange: (String) -> Unit, onSave: () -> Unit
                     .clickable(onClick = onSave)
                     .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
-                Text("메모 저장", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.navy)
+                Text("메모 저장", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.accentFg)
             }
         }
     }

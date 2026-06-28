@@ -169,7 +169,7 @@ fun SafetyChip(text: String, modifier: Modifier = Modifier) {
             .background(c.chip)
             .padding(horizontal = 9.dp, vertical = 4.dp)
     ) {
-        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.navy2)
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = c.accentFg)
     }
 }
 
@@ -355,7 +355,7 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, enabled: Boolean 
 @Composable
 fun SecondaryButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     val c = MaterialTheme.appColors
-    SafetyButton(text, c.chip, c.navy, modifier, enabled, onClick)
+    SafetyButton(text, c.chip, c.accentFg, modifier, enabled, onClick)
 }
 
 @Composable
@@ -406,7 +406,7 @@ fun SafetyBottomBar(current: NavTab, onHome: () -> Unit, onStats: () -> Unit, on
 @Composable
 private fun BottomItem(label: String, icon: ImageVector, active: Boolean, onClick: () -> Unit) {
     val c = MaterialTheme.appColors
-    val tint = if (active) c.navy else c.muted
+    val tint = if (active) c.navActive else c.muted
     Column(
         Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
