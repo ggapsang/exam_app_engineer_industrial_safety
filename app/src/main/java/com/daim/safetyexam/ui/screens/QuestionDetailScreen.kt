@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -33,7 +37,7 @@ import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.ChoiceItem
 import com.daim.safetyexam.ui.ChoiceState
 import com.daim.safetyexam.ui.ExplanationCard
-import com.daim.safetyexam.ui.FavoriteStar
+import com.daim.safetyexam.ui.NavyIconButton
 import com.daim.safetyexam.ui.QImage
 import com.daim.safetyexam.ui.SafetyChip
 import com.daim.safetyexam.ui.theme.appColors
@@ -67,12 +71,11 @@ fun QuestionDetailScreen(questionId: Int, onBack: () -> Unit) {
         containerColor = c.bg,
         topBar = {
             AppTopBar("문항 학습", onBack = onBack, actions = {
-                com.daim.safetyexam.ui.NavyIconButton(onClick = {
+                NavyIconButton(onClick = {
                     scope.launch { isFav = withContext(Dispatchers.IO) { repo.toggleFavorite(questionId) } }
                 }) {
-                    androidx.compose.material3.Icon(
-                        if (isFav) androidx.compose.material.icons.Icons.Filled.Star
-                        else androidx.compose.material.icons.Icons.Filled.StarBorder,
+                    Icon(
+                        if (isFav) Icons.Filled.Star else Icons.Filled.StarBorder,
                         contentDescription = "즐겨찾기",
                         tint = if (isFav) c.amber else c.onNavy
                     )

@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -224,7 +225,7 @@ private fun Segmented(options: List<String>, selectedIndex: Int, onSelect: (Int)
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (active) c.navy else androidx.compose.ui.graphics.Color.Transparent)
+                    .background(if (active) c.navy else Color.Transparent)
                     .clickable { onSelect(i) }
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.Center
