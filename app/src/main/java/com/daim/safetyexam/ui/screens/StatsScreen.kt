@@ -20,12 +20,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.Repository
@@ -43,7 +50,17 @@ import kotlinx.coroutines.withContext
 fun StatsScreen(onHome: () -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
     val c = MaterialTheme.appColors
-    val stats by produceState<StatsSummary?>(initialValue = null) {
+    // 화면이 다시 보일 때(ON_RESUME)마다 재조회 — 풀이 후 돌아오면 통계가 갱신됨
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var refreshTick by remember { mutableIntStateOf(0) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshTick++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val stats by produceState<StatsSummary?>(initialValue = null, refreshTick) {
         value = withContext(Dispatchers.IO) { Repository.get(context).stats() }
     }
 
