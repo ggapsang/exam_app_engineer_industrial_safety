@@ -28,6 +28,9 @@ class SettingsStore private constructor(context: Context) {
     /** 일반(회차/과목) 풀이의 즉시 채점 */
     var instantGrading by mutableStateOf(prefs.getBoolean("instant_grading", true))
         private set
+    /** 선택지 번호 섞기 */
+    var shuffleChoices by mutableStateOf(prefs.getBoolean("shuffle_choices", false))
+        private set
     /** 알림 시간 HH:mm, 빈값이면 미설정 */
     var notifyTime by mutableStateOf(prefs.getString("notify_time", "") ?: "")
         private set
@@ -59,6 +62,7 @@ class SettingsStore private constructor(context: Context) {
     fun updateTheme(v: ThemeMode) { theme = v; prefs.edit().putString("theme", v.name).apply() }
     fun updateFont(v: FontScale) { fontScale = v; prefs.edit().putString("font", v.name).apply() }
     fun updateInstantGrading(v: Boolean) { instantGrading = v; prefs.edit().putBoolean("instant_grading", v).apply() }
+    fun updateShuffleChoices(v: Boolean) { shuffleChoices = v; prefs.edit().putBoolean("shuffle_choices", v).apply() }
     fun updateNotifyTime(v: String) { notifyTime = v; prefs.edit().putString("notify_time", v).apply() }
 
     fun updateMockSkipStart(v: Boolean) { mockSkipStart = v; prefs.edit().putBoolean("mock_skip_start", v).apply() }

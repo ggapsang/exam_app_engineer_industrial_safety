@@ -84,7 +84,7 @@ fun HomeScreen(
         topBar = {
             AppTopBar(
                 title = "산업안전기사 기출",
-                subtitle = "2017–2021 · 1,800문항 오프라인",
+                subtitle = "2017–2021 · 1,800문항",
                 actions = {
                     NavyIconButton(onClick = onSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "설정", tint = c.onNavy, modifier = Modifier.size(18.dp))

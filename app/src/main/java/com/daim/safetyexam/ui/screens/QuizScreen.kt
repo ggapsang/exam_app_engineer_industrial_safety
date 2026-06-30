@@ -156,10 +156,14 @@ fun QuizScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     SecondaryButton("이전", Modifier.weight(1f), enabled = vm.currentIndex > 0) { vm.prev() }
-                    if (vm.currentIndex < total - 1) {
-                        AccentButton("다음", Modifier.weight(1f)) { vm.next() }
-                    } else {
-                        AccentButton("제출 · 채점", Modifier.weight(1f)) { showSubmitDialog = true }
+                    when {
+                        // 즉시 채점: 정답 공개 전에는 '정답 확인'을 먼저 보여 준다(오선택 정정 허용)
+                        vm.instantGrading && !revealed ->
+                            AccentButton("정답 확인", Modifier.weight(1f), enabled = selected != null) { vm.reveal() }
+                        vm.currentIndex < total - 1 ->
+                            AccentButton("다음", Modifier.weight(1f)) { vm.next() }
+                        else ->
+                            AccentButton("제출 · 채점", Modifier.weight(1f)) { showSubmitDialog = true }
                     }
                 }
             }
@@ -188,7 +192,7 @@ fun QuizScreen(
             Text(q.stem, style = MaterialTheme.typography.bodyLarge, color = c.ink)
             Spacer(Modifier.height(14.dp))
 
-            q.choices.forEach { choice ->
+            q.choices.forEachIndexed { index, choice ->
                 val state = when {
                     revealed && choice.no == q.answerNo -> ChoiceState.CORRECT
                     revealed && choice.no == selected -> ChoiceState.WRONG
@@ -196,7 +200,7 @@ fun QuizScreen(
                     else -> ChoiceState.DEFAULT
                 }
                 ChoiceItem(
-                    no = choice.no,
+                    no = index + 1,
                     body = choice.body,
                     state = state,
                     imageAsset = choice.imageAsset,
@@ -207,8 +211,9 @@ fun QuizScreen(
 
             if (revealed) {
                 Spacer(Modifier.height(6.dp))
+                val displayAnswerNo = q.choices.indexOfFirst { it.no == q.answerNo } + 1
                 ExplanationCard(
-                    answerNo = q.answerNo,
+                    answerNo = displayAnswerNo,
                     explanation = q.explanation,
                     referencesMd = q.referencesMd,
                     isFavorite = isFav,

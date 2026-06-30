@@ -134,6 +134,18 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
                 Divider()
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
+                        Text("선택지 섞기", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                        Text("보기 번호를 무작위로 섞어서 출제", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                    }
+                    Switch(
+                        checked = settings.shuffleChoices,
+                        onCheckedChange = { settings.updateShuffleChoices(it) },
+                        colors = SwitchDefaults.colors(checkedTrackColor = c.amber, checkedThumbColor = c.navy)
+                    )
+                }
+                Divider()
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
                         Text("모의고사 시작 안내", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
                         Text("모의고사 진입 시 채점 방식을 매번 묻기", style = MaterialTheme.typography.labelSmall, color = c.muted)
                     }
@@ -238,7 +250,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
             SettingCard {
                 Text("산업안전기사 기출 v1.2.0", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = c.ink)
                 Spacer(Modifier.height(4.dp))
-                Text("문항 1,800 · 5개년(2017~2021) 15회차 · 완전 오프라인", style = MaterialTheme.typography.labelSmall, color = c.muted)
+                Text("문항 1,800 · 5개년(2017~2021) 15회차", style = MaterialTheme.typography.labelSmall, color = c.muted)
                 Text("학습 데이터는 기기 내부에만 저장되며 외부로 전송되지 않습니다.", style = MaterialTheme.typography.labelSmall, color = c.muted)
             }
             Spacer(Modifier.height(16.dp))
@@ -329,7 +341,9 @@ private fun ActionRow(label: String, danger: Boolean = false, onClick: () -> Uni
 
 @Composable
 private fun Divider() {
+    Spacer(Modifier.height(10.dp))
     Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.appColors.line))
+    Spacer(Modifier.height(10.dp))
 }
 
 @Composable

@@ -123,7 +123,9 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
                 val ids = idProvider()
                 repo.loadQuestions(ids)
             }
-            questions = loaded
+            questions = if (settings.shuffleChoices) {
+                loaded.map { q -> q.copy(choices = q.choices.shuffled()) }
+            } else loaded
             sessionLabel = when (newMode) {
                 StudyMode.EXAM -> loaded.firstOrNull()?.examTitle ?: ""
                 StudyMode.SUBJECT -> loaded.firstOrNull()?.subjectShort ?: ""
@@ -151,8 +153,16 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun select(no: Int) {
         val q = current ?: return
+        if (revealed[q.id] == true) return  // 이미 공개된 문항은 보기 변경 불가
         answers[q.id] = no
-        if (instantGrading) revealed[q.id] = true
+        // 즉시 채점이라도 바로 공개하지 않는다. 사용자가 '정답 확인'을 눌러야 reveal() 된다.
+    }
+
+    /** 즉시 채점에서 '정답 확인'을 눌렀을 때 현재 문항의 정답을 공개한다. */
+    fun reveal() {
+        val q = current ?: return
+        if (answers[q.id] == null) return  // 보기를 고르지 않았으면 공개하지 않음
+        revealed[q.id] = true
     }
 
     fun goTo(index: Int) {
