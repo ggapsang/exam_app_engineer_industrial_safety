@@ -162,13 +162,13 @@ class Repository private constructor(private val db: SQLiteDatabase) {
 
         val choicesByQ = HashMap<Int, MutableList<Choice>>()
         db.rawQuery(
-            "SELECT question_id, choice_no, body FROM choices WHERE question_id IN ($inClause) ORDER BY choice_no", null
+            "SELECT question_id, choice_no, body, note FROM choices WHERE question_id IN ($inClause) ORDER BY choice_no", null
         ).use { c ->
             while (c.moveToNext()) {
                 val qid = c.getInt(0)
                 val no = c.getInt(1)
                 choicesByQ.getOrPut(qid) { mutableListOf() }
-                    .add(Choice(no, c.getString(2), choiceImg[qid]?.get(no)))
+                    .add(Choice(no, c.getString(2), choiceImg[qid]?.get(no), c.getStringOrNull(3)))
             }
         }
 

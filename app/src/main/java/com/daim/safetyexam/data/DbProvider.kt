@@ -22,7 +22,8 @@ object DbProvider {
     private const val KEY_ASSET_VER = "asset_db_version"
 
     /** assets DB를 교체(회차 추가/오답 정정)할 때마다 이 숫자를 올린다. */
-    const val ASSET_DB_VERSION = 2
+    // v3: choices.note 컬럼 추가(보기별 해설 — 보기 셔플 대비). 기존 콘텐츠/사용자 데이터는 보존.
+    const val ASSET_DB_VERSION = 3
 
     /** 단일 로컬 사용자 식별자 */
     const val LOCAL_USER = "local"

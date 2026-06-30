@@ -19,11 +19,12 @@ data class Exam(
     val title: String get() = "${year}년 ${session}회"
 }
 
-/** 보기 + 보기 이미지(있을 때) */
+/** 보기 + 보기 이미지(있을 때) + 보기별 해설(note) */
 data class Choice(
     val no: Int,
     val body: String,
-    val imageAsset: String? = null
+    val imageAsset: String? = null,
+    val note: String? = null
 )
 
 /**

@@ -204,6 +204,7 @@ fun ChoiceItem(
     body: String,
     state: ChoiceState,
     imageAsset: String? = null,
+    note: String? = null,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -248,6 +249,16 @@ fun ChoiceItem(
         if (imageAsset != null) {
             Spacer(Modifier.height(8.dp))
             QImage(imageAsset)
+        }
+        // 보기별 해설(채점 공개 시) — 번호 좌측 정렬에 맞춰 들여쓰기
+        if (!note.isNullOrBlank()) {
+            Spacer(Modifier.height(7.dp))
+            Text(
+                note,
+                style = MaterialTheme.typography.bodySmall,
+                color = c.muted,
+                modifier = Modifier.padding(start = 29.dp)
+            )
         }
     }
 }

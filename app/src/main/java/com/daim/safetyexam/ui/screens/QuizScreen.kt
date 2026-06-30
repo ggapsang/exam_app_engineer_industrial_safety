@@ -204,6 +204,7 @@ fun QuizScreen(
                     body = choice.body,
                     state = state,
                     imageAsset = choice.imageAsset,
+                    note = if (revealed) choice.note else null,
                     onClick = if (!revealed) ({ vm.select(choice.no) }) else null
                 )
                 Spacer(Modifier.height(8.dp))

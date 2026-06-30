@@ -111,7 +111,8 @@ fun QuestionDetailScreen(questionId: Int, onBack: () -> Unit) {
                     no = ch.no,
                     body = ch.body,
                     state = if (ch.no == question.answerNo) ChoiceState.CORRECT else ChoiceState.DEFAULT,
-                    imageAsset = ch.imageAsset
+                    imageAsset = ch.imageAsset,
+                    note = ch.note
                 )
                 Spacer(Modifier.height(8.dp))
             }
