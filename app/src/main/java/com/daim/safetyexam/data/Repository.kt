@@ -244,10 +244,10 @@ class Repository private constructor(private val db: SQLiteDatabase) {
             JOIN subjects s ON s.subject_id = q.subject_id
             WHERE 1=1 $dateFilter
             GROUP BY q.question_id
-            HAVING wrong_cnt >= ?
+            HAVING wrong_cnt >= $minWrong
             ORDER BY fav DESC, q.subject_id, wrong_cnt DESC
             """.trimIndent(),
-            arrayOf(minWrong.toString())
+            null
         ).use { c ->
             buildList {
                 while (c.moveToNext()) {
