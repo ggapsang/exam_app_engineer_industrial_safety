@@ -50,6 +50,7 @@ import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.SafetyBottomBar
 import com.daim.safetyexam.ui.SectionLabel
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,9 +94,7 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
         topBar = { AppTopBar("설정") },
         bottomBar = { SafetyBottomBar(NavTab.SETTINGS, onHome = onHome, onStats = onStats, onSettings = {}) }
     ) { pad ->
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             SectionLabel("화면")
             Spacer(Modifier.height(6.dp))
             SettingCard {

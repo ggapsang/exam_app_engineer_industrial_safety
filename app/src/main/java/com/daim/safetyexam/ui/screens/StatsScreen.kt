@@ -42,6 +42,7 @@ import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.PassBar
 import com.daim.safetyexam.ui.SafetyBottomBar
 import com.daim.safetyexam.ui.SectionLabel
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -76,9 +77,7 @@ fun StatsScreen(onHome: () -> Unit, onSettings: () -> Unit) {
             }
             return@Scaffold
         }
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatBox("${s.totalAttempts}", "누적 풀이", Modifier.weight(1f))
                 StatBox("${(s.accuracy * 100).toInt()}%", "정답률", Modifier.weight(1f))

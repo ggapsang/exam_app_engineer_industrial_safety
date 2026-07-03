@@ -38,6 +38,7 @@ import com.daim.safetyexam.data.Subject
 import com.daim.safetyexam.ui.AccentButton
 import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.SectionLabel
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 
 @Composable
@@ -58,9 +59,7 @@ fun SubjectSetupScreen(
     var order by remember { mutableStateOf("random") }
 
     Scaffold(containerColor = c.bg, topBar = { AppTopBar("과목별 풀이", onBack = onBack) }) { pad ->
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             SectionLabel("과목 선택")
             Spacer(Modifier.height(8.dp))
             subjects.forEach { s ->

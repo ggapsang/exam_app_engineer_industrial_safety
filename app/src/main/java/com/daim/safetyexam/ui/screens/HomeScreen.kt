@@ -54,6 +54,7 @@ import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.NavyIconButton
 import com.daim.safetyexam.ui.SafetyBottomBar
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
@@ -113,13 +114,7 @@ fun HomeScreen(
             SafetyBottomBar(current = NavTab.HOME, onHome = {}, onStats = onStats, onSettings = onSettings)
         }
     ) { pad ->
-        Column(
-            Modifier
-                .padding(pad)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             // 빠른 시작 그라데이션 카드
             QuickStartCard(wrongCount, resume, onWrong, onResume, onMock)
 

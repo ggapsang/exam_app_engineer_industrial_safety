@@ -57,6 +57,7 @@ import com.daim.safetyexam.ui.SafetyToggle
 import com.daim.safetyexam.ui.SecondaryButton
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.SheetGrip
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 
 private data class SavedInfo(val wrong: Int, val unanswered: Int)
@@ -114,9 +115,7 @@ fun ResultScreen(
             }
             return@Scaffold
         }
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             // 점수 게이지 카드
             Column(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card)

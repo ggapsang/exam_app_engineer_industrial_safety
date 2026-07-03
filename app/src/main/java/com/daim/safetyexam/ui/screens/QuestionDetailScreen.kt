@@ -40,6 +40,7 @@ import com.daim.safetyexam.ui.ExplanationCard
 import com.daim.safetyexam.ui.NavyIconButton
 import com.daim.safetyexam.ui.QImage
 import com.daim.safetyexam.ui.SafetyChip
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,9 +91,7 @@ fun QuestionDetailScreen(questionId: Int, onBack: () -> Unit) {
             }
             return@Scaffold
         }
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SafetyChip("${question.subjectId}과목 · ${question.subjectShort}")
                 Spacer(Modifier.size(6.dp))

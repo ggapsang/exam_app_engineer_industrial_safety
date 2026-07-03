@@ -37,6 +37,7 @@ import com.daim.safetyexam.ui.PrimaryButton
 import com.daim.safetyexam.ui.SafetyCheckbox
 import com.daim.safetyexam.ui.SafetyToggle
 import com.daim.safetyexam.ui.SecondaryButton
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
 
 @Composable
@@ -53,9 +54,7 @@ fun MockStartScreen(
         containerColor = c.bg,
         topBar = { AppTopBar("모의고사 시작", onBack = onCancel) }
     ) { pad ->
-        Column(
-            Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             // 시험 요약 (네이비 그라데이션)
             Row(
                 Modifier

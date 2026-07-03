@@ -5,9 +5,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -16,6 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,9 +50,52 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.daim.safetyexam.ui.theme.appColors
+
+// ─────────────────────────── 반응형(태블릿) 컨테이너 ───────────────────────────
+
+/**
+ * 넓은 화면(태블릿 등)에서 본문이 과도하게 늘어나 가독성이 떨어지지 않도록 하는 최대 폭.
+ * 폰에서는 가용 폭이 이보다 작아 아무 영향이 없다.
+ *
+ * ── 태블릿 대응 방향 (각주) ────────────────────────────────────────────────
+ *  [현재] 옵션 1 · 최소 개선 : 본문 폭을 [ContentMaxWidth]로 제한하고 가운데 정렬.
+ *         세로 스크롤 본문 화면(홈/통계/설정/풀이/결과/모의고사 시작/과목 설정/문항 상세)에만 적용.
+ *         단일 APK 런타임 로직이라 같은 빌드가 폰=꽉참 / 태블릿=중앙 제한으로 자동 분기.
+ *
+ *  [가능] 옵션 2 · 본격 태블릿 대응 : WindowSizeClass 도입 → 마스터-디테일 2열 레이아웃,
+ *         회차 그리드 열 수 적응, (하드 제약인 portrait 잠금 재검토 후) 가로 모드 허용,
+ *         목록/그리드 화면(회차 목록·즐겨찾기·검색·오답노트) 폭 제한까지 확장.
+ *
+ *  [가능] 옵션 3 · 현행 유지 : 별도 태블릿 대응 없이 폰 레이아웃을 그대로 확대 사용.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+val ContentMaxWidth = 640.dp
+
+/**
+ * 세로 스크롤 본문을 [ContentMaxWidth]로 제한하고 넓은 화면에서 가운데 정렬하는 컨테이너.
+ * 폰에서는 기존과 동일하게 화면을 꽉 채운다. 기존 `Column(verticalScroll)` 본문을 이 블록으로 대체한다.
+ */
+@Composable
+fun ScrollableContentColumn(
+    pad: PaddingValues,
+    contentPadding: Dp = 14.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Box(Modifier.padding(pad).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .widthIn(max = ContentMaxWidth)
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding),
+            content = content
+        )
+    }
+}
 
 // ──────────────────────────────── 앱바 ────────────────────────────────
 

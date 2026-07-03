@@ -61,6 +61,7 @@ import com.daim.safetyexam.ui.QuizSessionViewModel
 import com.daim.safetyexam.ui.SafetyCheckbox
 import com.daim.safetyexam.ui.SafetyChip
 import com.daim.safetyexam.ui.SafetyToggle
+import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.SecondaryButton
 import com.daim.safetyexam.ui.SheetGrip
 import com.daim.safetyexam.ui.theme.appColors
@@ -169,13 +170,7 @@ fun QuizScreen(
             }
         }
     ) { pad ->
-        Column(
-            Modifier
-                .padding(pad)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp)
-        ) {
+        ScrollableContentColumn(pad) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SafetyChip("${q.subjectId}과목 · ${q.subjectShort}")
                 Spacer(Modifier.weight(1f))
