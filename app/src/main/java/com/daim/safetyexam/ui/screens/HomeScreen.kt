@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -53,8 +52,10 @@ import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.NavyIconButton
-import com.daim.safetyexam.ui.SafetyBottomBar
+import com.daim.safetyexam.ui.TriadScaffold
 import com.daim.safetyexam.ui.ScrollableContentColumn
+import com.daim.safetyexam.ui.ContentMaxWidth
+import com.daim.safetyexam.ui.rememberIsWide
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
@@ -97,8 +98,10 @@ fun HomeScreen(
     val (wrongCount, favCount) = counts
     val resume = ResumeSnapshot.fromJson(settings.resumeJson)
 
-    Scaffold(
-        containerColor = c.bg,
+    val wide = rememberIsWide()
+    TriadScaffold(
+        current = NavTab.HOME,
+        onHome = {}, onStats = onStats, onSettings = onSettings,
         topBar = {
             AppTopBar(
                 title = "산업안전기사 기출",
@@ -109,12 +112,9 @@ fun HomeScreen(
                     }
                 }
             )
-        },
-        bottomBar = {
-            SafetyBottomBar(current = NavTab.HOME, onHome = {}, onStats = onStats, onSettings = onSettings)
         }
     ) { pad ->
-        ScrollableContentColumn(pad) {
+        ScrollableContentColumn(pad, maxWidth = if (wide) 920.dp else ContentMaxWidth) {
             // 빠른 시작 그라데이션 카드
             QuickStartCard(wrongCount, resume, onWrong, onResume, onMock)
 
@@ -131,14 +131,16 @@ fun HomeScreen(
                 ModeEntry("검색", "키워드 찾기", Icons.Filled.Search, false, onSearch),
             )
             // LazyVerticalGrid 대신 일반 Row 그리드로 배치 (verticalScroll 안에서 높이가
-            // 콘텐츠에 맞게 늘어나도록 — 고정 높이 그리드는 마지막 줄이 잘림)
-            modes.chunked(2).forEach { rowItems ->
+            // 콘텐츠에 맞게 늘어나도록 — 고정 높이 그리드는 마지막 줄이 잘림).
+            // 넓은 화면(태블릿 가로)에서는 3열로 배치.
+            val cols = if (wide) 3 else 2
+            modes.chunked(cols).forEach { rowItems ->
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     rowItems.forEach { m -> ModeCard(m, Modifier.weight(1f)) }
-                    if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                    repeat(cols - rowItems.size) { Spacer(Modifier.weight(1f)) }
                 }
                 Spacer(Modifier.height(10.dp))
             }

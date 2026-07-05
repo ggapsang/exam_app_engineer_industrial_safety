@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 폰 기본값: 회전 금지(세로 고정). 태블릿은 values-sw600dp에서 true로 오버라이드. -->
+    <bool name="allow_rotation">false</bool>
+</resources>

@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -48,7 +47,7 @@ import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.ThemeMode
 import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
-import com.daim.safetyexam.ui.SafetyBottomBar
+import com.daim.safetyexam.ui.TriadScaffold
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.ScrollableContentColumn
 import com.daim.safetyexam.ui.theme.appColors
@@ -89,10 +88,10 @@ fun SettingsScreen(settings: SettingsStore, onHome: () -> Unit, onStats: () -> U
         }
     }
 
-    Scaffold(
-        containerColor = c.bg,
-        topBar = { AppTopBar("설정") },
-        bottomBar = { SafetyBottomBar(NavTab.SETTINGS, onHome = onHome, onStats = onStats, onSettings = {}) }
+    TriadScaffold(
+        current = NavTab.SETTINGS,
+        onHome = onHome, onStats = onStats, onSettings = {},
+        topBar = { AppTopBar("설정") }
     ) { pad ->
         ScrollableContentColumn(pad) {
             SectionLabel("화면")

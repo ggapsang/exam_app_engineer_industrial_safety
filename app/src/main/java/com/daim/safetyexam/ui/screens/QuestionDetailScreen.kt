@@ -5,11 +5,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ import com.daim.safetyexam.ui.NavyIconButton
 import com.daim.safetyexam.ui.QImage
 import com.daim.safetyexam.ui.SafetyChip
 import com.daim.safetyexam.ui.ScrollableContentColumn
+import com.daim.safetyexam.ui.rememberIsWide
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -91,45 +94,79 @@ fun QuestionDetailScreen(questionId: Int, onBack: () -> Unit) {
             }
             return@Scaffold
         }
-        ScrollableContentColumn(pad) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SafetyChip("${question.subjectId}과목 · ${question.subjectShort}")
-                Spacer(Modifier.size(6.dp))
-                Text("${question.examTitle} ${question.qNumber}번", style = MaterialTheme.typography.labelMedium, color = c.muted)
+        val onToggleFav = { scope.launch { isFav = withContext(Dispatchers.IO) { repo.toggleFavorite(questionId) } }; Unit }
+        val onSaveMemo = { scope.launch { withContext(Dispatchers.IO) { repo.saveMemo(questionId, memo) } }; Unit }
+        if (rememberIsWide()) {
+            // 넓은 화면(태블릿 가로): 좌=문제·보기 / 우=해설
+            Row(Modifier.padding(pad).fillMaxSize()) {
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(14.dp)
+                ) {
+                    DetailQuestionContent(question)
+                    Spacer(Modifier.height(24.dp))
+                }
+                Box(Modifier.fillMaxHeight().width(1.dp).background(c.line))
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(14.dp)
+                ) {
+                    ExplanationCard(
+                        answerNo = question.answerNo,
+                        explanation = question.explanation,
+                        referencesMd = question.referencesMd,
+                        isFavorite = isFav,
+                        onToggleFavorite = onToggleFav,
+                        memo = memo,
+                        onMemoChange = { memo = it },
+                        onSaveMemo = onSaveMemo
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            if (question.stemImage != null) {
-                QImage(question.stemImage)
-                Spacer(Modifier.height(12.dp))
-            }
-            Text(question.stem, style = MaterialTheme.typography.bodyLarge, color = c.ink)
-            Spacer(Modifier.height(14.dp))
-
-            question.choices.forEach { ch ->
-                ChoiceItem(
-                    no = ch.no,
-                    body = ch.body,
-                    state = if (ch.no == question.answerNo) ChoiceState.CORRECT else ChoiceState.DEFAULT,
-                    imageAsset = ch.imageAsset,
-                    note = ch.note
+        } else {
+            ScrollableContentColumn(pad) {
+                DetailQuestionContent(question)
+                Spacer(Modifier.height(6.dp))
+                ExplanationCard(
+                    answerNo = question.answerNo,
+                    explanation = question.explanation,
+                    referencesMd = question.referencesMd,
+                    isFavorite = isFav,
+                    onToggleFavorite = onToggleFav,
+                    memo = memo,
+                    onMemoChange = { memo = it },
+                    onSaveMemo = onSaveMemo
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(24.dp))
             }
-
-            Spacer(Modifier.height(6.dp))
-            ExplanationCard(
-                answerNo = question.answerNo,
-                explanation = question.explanation,
-                referencesMd = question.referencesMd,
-                isFavorite = isFav,
-                onToggleFavorite = {
-                    scope.launch { isFav = withContext(Dispatchers.IO) { repo.toggleFavorite(questionId) } }
-                },
-                memo = memo,
-                onMemoChange = { memo = it },
-                onSaveMemo = { scope.launch { withContext(Dispatchers.IO) { repo.saveMemo(questionId, memo) } } }
-            )
-            Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+/** 문항 상세의 문제 본문 + 보기(정답 표시). 세로/가로 배치 공용. */
+@Composable
+private fun DetailQuestionContent(question: QuestionFull) {
+    val c = MaterialTheme.appColors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SafetyChip("${question.subjectId}과목 · ${question.subjectShort}")
+        Spacer(Modifier.size(6.dp))
+        Text("${question.examTitle} ${question.qNumber}번", style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+    Spacer(Modifier.height(12.dp))
+    if (question.stemImage != null) {
+        QImage(question.stemImage)
+        Spacer(Modifier.height(12.dp))
+    }
+    Text(question.stem, style = MaterialTheme.typography.bodyLarge, color = c.ink)
+    Spacer(Modifier.height(14.dp))
+
+    question.choices.forEach { ch ->
+        ChoiceItem(
+            no = ch.no,
+            body = ch.body,
+            state = if (ch.no == question.answerNo) ChoiceState.CORRECT else ChoiceState.DEFAULT,
+            imageAsset = ch.imageAsset,
+            note = ch.note
+        )
+        Spacer(Modifier.height(8.dp))
     }
 }

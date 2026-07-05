@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.daim.safetyexam.data.MockWrongSave
+import com.daim.safetyexam.data.SessionResult
 import com.daim.safetyexam.data.SettingsStore
 import com.daim.safetyexam.data.StudyMode
 import com.daim.safetyexam.data.SubjectStat
@@ -58,6 +59,8 @@ import com.daim.safetyexam.ui.SecondaryButton
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.SheetGrip
 import com.daim.safetyexam.ui.ScrollableContentColumn
+import com.daim.safetyexam.ui.ContentMaxWidth
+import com.daim.safetyexam.ui.rememberIsWide
 import com.daim.safetyexam.ui.theme.appColors
 
 private data class SavedInfo(val wrong: Int, val unanswered: Int)
@@ -115,72 +118,47 @@ fun ResultScreen(
             }
             return@Scaffold
         }
-        ScrollableContentColumn(pad) {
-            // 점수 게이지 카드
-            Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card)
-                    .border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    Modifier.clip(RoundedCornerShape(20.dp)).background(if (result.passed) c.green else c.red)
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    Text(if (result.passed) "합격" else "불합격", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.onNavy)
-                }
-                Spacer(Modifier.height(8.dp))
-                val unitSize = MaterialTheme.typography.titleLarge.fontSize
-                val mutedColor = c.muted
-                Text(
-                    buildAnnotatedString {
-                        append("${result.score100}")
-                        withStyle(SpanStyle(fontSize = unitSize, color = mutedColor)) { append(" / 100") }
-                    },
-                    style = MaterialTheme.typography.displayLarge, color = c.accentFg
-                )
-                Spacer(Modifier.height(4.dp))
-                Text("합격선 60점 · 정답 ${result.correct} / ${result.total}", style = MaterialTheme.typography.labelMedium, color = c.muted)
-                Text("소요 ${formatElapsed(result.elapsedSec)}", style = MaterialTheme.typography.labelSmall, color = c.muted)
-            }
-
-            // 저장 확인 배너 (저장한 경우)
+        val wide = rememberIsWide()
+        val actions: @Composable () -> Unit = {
+            ResultActions(
+                isMock = isMock,
+                hasSaved = savedInfo != null,
+                onHome = onHome,
+                onReviewWrongNote = onReviewWrongNote,
+                onRetryMock = onRetryMock,
+                onSessionReview = { onSessionReview(vm.sessionWrongIds(includeUnanswered = true)) }
+            )
+        }
+        val banner: @Composable () -> Unit = {
             savedInfo?.let { s ->
                 Spacer(Modifier.height(12.dp))
                 SavedBanner(s.wrong + s.unanswered, s.wrong, s.unanswered)
             }
-
-            Spacer(Modifier.height(12.dp))
-            Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card)
-                    .border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(14.dp)
-            ) {
-                SectionLabel("과목별 점수")
-                Spacer(Modifier.height(4.dp))
-                result.perSubject.forEach { st ->
-                    val pct = (st.accuracy * 100).toInt()
-                    PassBar(label = st.shortName, value = pct, fillColor = if (pct >= 60) c.green else if (pct >= 40) c.amber else c.red)
-                }
-                Spacer(Modifier.height(4.dp))
-                Text("검은 선 = 과목 합격선(60) · 막대 색 = 통과 여부", style = MaterialTheme.typography.labelSmall, color = c.muted)
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (isMock) {
-                    SecondaryButton("다시 풀기", Modifier.weight(1f), onClick = onRetryMock)
-                    if (savedInfo != null) {
-                        PrimaryButton("오답노트에서 복습", Modifier.weight(1f), onClick = onReviewWrongNote)
-                    } else {
-                        PrimaryButton("이번 회차 오답 보기", Modifier.weight(1f)) {
-                            onSessionReview(vm.sessionWrongIds(includeUnanswered = true))
-                        }
+        }
+        ScrollableContentColumn(pad, maxWidth = if (wide) 1000.dp else ContentMaxWidth) {
+            if (wide) {
+                // 넓은 화면(태블릿 가로): 좌=점수/저장 배너 / 우=과목별 점수+액션
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        ScoreCard(result)
+                        banner()
                     }
-                } else {
-                    SecondaryButton("홈으로", Modifier.weight(1f), onClick = onHome)
-                    PrimaryButton("오답 복습", Modifier.weight(1f), onClick = onReviewWrongNote)
+                    Column(Modifier.weight(1f)) {
+                        SubjectScoresCard(result)
+                        Spacer(Modifier.height(16.dp))
+                        actions()
+                    }
                 }
+                Spacer(Modifier.height(16.dp))
+            } else {
+                ScoreCard(result)
+                banner()
+                Spacer(Modifier.height(12.dp))
+                SubjectScoresCard(result)
+                Spacer(Modifier.height(16.dp))
+                actions()
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
         }
     }
 
@@ -205,6 +183,95 @@ fun ResultScreen(
                 showSheet = false
             }
         )
+    }
+}
+
+/** 점수 게이지 카드 (합격 배지 + 큰 점수 + 메타). */
+@Composable
+private fun ScoreCard(result: SessionResult) {
+    val c = MaterialTheme.appColors
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card)
+            .border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            Modifier.clip(RoundedCornerShape(20.dp)).background(if (result.passed) c.green else c.red)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+        ) {
+            Text(if (result.passed) "합격" else "불합격", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.onNavy)
+        }
+        Spacer(Modifier.height(8.dp))
+        val unitSize = MaterialTheme.typography.titleLarge.fontSize
+        val mutedColor = c.muted
+        Text(
+            buildAnnotatedString {
+                append("${result.score100}")
+                withStyle(SpanStyle(fontSize = unitSize, color = mutedColor)) { append(" / 100") }
+            },
+            style = MaterialTheme.typography.displayLarge, color = c.accentFg
+        )
+        Spacer(Modifier.height(4.dp))
+        Text("합격선 60점 · 과목 과락선 40점 · 정답 ${result.correct} / ${result.total}", style = MaterialTheme.typography.labelMedium, color = c.muted)
+        Text("소요 ${formatElapsed(result.elapsedSec)}", style = MaterialTheme.typography.labelSmall, color = c.muted)
+        // 평균 60 이상이어도 과락 과목이 있으면 불합격 — 이유를 명시
+        if (result.hasSubjectFail) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "과락 과목 ${result.failedSubjects.size}개 (40점 미만) → 불합격",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = c.red
+            )
+        }
+    }
+}
+
+/** 과목별 점수 카드 (PassBar + 합격선 안내). */
+@Composable
+private fun SubjectScoresCard(result: SessionResult) {
+    val c = MaterialTheme.appColors
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card)
+            .border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(14.dp)
+    ) {
+        SectionLabel("과목별 점수")
+        Spacer(Modifier.height(4.dp))
+        result.perSubject.forEach { st ->
+            val pct = (st.accuracy * 100).toInt()
+            PassBar(
+                label = st.shortName,
+                value = pct,
+                fillColor = if (pct >= SessionResult.SUBJECT_PASS_LINE) c.green else c.red,
+                passLine = SessionResult.SUBJECT_PASS_LINE
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text("검은 선 = 과목 과락선(40) · 40점 미만 과목이 하나라도 있으면 불합격", style = MaterialTheme.typography.labelSmall, color = c.muted)
+    }
+}
+
+/** 결과 하단 액션 버튼들 (모드별 분기). */
+@Composable
+private fun ResultActions(
+    isMock: Boolean,
+    hasSaved: Boolean,
+    onHome: () -> Unit,
+    onReviewWrongNote: () -> Unit,
+    onRetryMock: () -> Unit,
+    onSessionReview: () -> Unit
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (isMock) {
+            SecondaryButton("다시 풀기", Modifier.weight(1f), onClick = onRetryMock)
+            if (hasSaved) {
+                PrimaryButton("오답노트에서 복습", Modifier.weight(1f), onClick = onReviewWrongNote)
+            } else {
+                PrimaryButton("이번 회차 오답 보기", Modifier.weight(1f), onClick = onSessionReview)
+            }
+        } else {
+            SecondaryButton("홈으로", Modifier.weight(1f), onClick = onHome)
+            PrimaryButton("오답 복습", Modifier.weight(1f), onClick = onReviewWrongNote)
+        }
     }
 }
 

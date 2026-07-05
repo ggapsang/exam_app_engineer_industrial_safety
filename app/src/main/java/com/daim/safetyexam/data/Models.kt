@@ -112,5 +112,15 @@ data class SessionResult(
     val perSubject: List<SubjectStat>
 ) {
     val score100: Int get() = if (total == 0) 0 else Math.round(correct * 100f / total)
-    val passed: Boolean get() = score100 >= 60
+    /** 과락 과목 = 40점 미만(문항이 있는 과목만 대상). 표시 점수(정수 %)와 동일 기준으로 판정. */
+    val failedSubjects: List<SubjectStat> get() =
+        perSubject.filter { it.total > 0 && (it.accuracy * 100).toInt() < SUBJECT_PASS_LINE }
+    val hasSubjectFail: Boolean get() = failedSubjects.isNotEmpty()
+    /** 합격 = 전체 평균 60점 이상 AND 과락 과목(40점 미만) 없음. 한 과목이라도 40 미만이면 불합격. */
+    val passed: Boolean get() = score100 >= OVERALL_PASS_LINE && !hasSubjectFail
+
+    companion object {
+        const val OVERALL_PASS_LINE = 60   // 전체 합격선(평균)
+        const val SUBJECT_PASS_LINE = 40   // 과목 과락선
+    }
 }

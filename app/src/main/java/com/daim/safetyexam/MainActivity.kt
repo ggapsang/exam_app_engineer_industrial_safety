@@ -1,5 +1,6 @@
 package com.daim.safetyexam
 
+import android.content.pm.ActivityInfo
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,6 +23,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // 앱바가 네이비이므로 상태바 아이콘은 항상 밝게(흰색) 유지
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT))
+        // 태블릿(sw600dp+)만 자유 회전, 폰은 세로 고정 — 리소스 한정자 bool로 기기 분기
+        requestedOrientation = if (resources.getBoolean(R.bool.allow_rotation))
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        else
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val settings = SettingsStore.get(this)
         setContent {
             SafetyExamTheme(themeMode = settings.theme, fontScale = settings.fontScale) {

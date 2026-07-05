@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.daim.safetyexam.data.QuestionFull
 import com.daim.safetyexam.data.Repository
 import com.daim.safetyexam.data.SessionExitSave
 import com.daim.safetyexam.data.SettingsStore
@@ -62,6 +64,7 @@ import com.daim.safetyexam.ui.SafetyCheckbox
 import com.daim.safetyexam.ui.SafetyChip
 import com.daim.safetyexam.ui.SafetyToggle
 import com.daim.safetyexam.ui.ScrollableContentColumn
+import com.daim.safetyexam.ui.rememberIsWide
 import com.daim.safetyexam.ui.SecondaryButton
 import com.daim.safetyexam.ui.SheetGrip
 import com.daim.safetyexam.ui.theme.appColors
@@ -170,56 +173,43 @@ fun QuizScreen(
             }
         }
     ) { pad ->
-        ScrollableContentColumn(pad) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SafetyChip("${q.subjectId}과목 · ${q.subjectShort}")
-                Spacer(Modifier.weight(1f))
-                if (q.isDisputed) {
-                    Text("이의제기 문항", color = c.red, style = MaterialTheme.typography.labelMedium)
+        val onSaveMemo = { scope.launch { withContext(Dispatchers.IO) { repo.saveMemo(q.id, memo) } }; Unit }
+        if (rememberIsWide()) {
+            // 넓은 화면(태블릿 가로): 좌=문제·보기 / 우=해설 (각각 독립 스크롤)
+            Row(Modifier.padding(pad).fillMaxSize()) {
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(14.dp)
+                ) {
+                    QuestionContent(q, selected, revealed) { vm.select(it) }
+                    Spacer(Modifier.height(24.dp))
+                }
+                Box(Modifier.fillMaxHeight().width(1.dp).background(c.line))
+                if (revealed) {
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(14.dp)
+                    ) {
+                        ExplanationContent(q, isFav, memo, { toggleFav() }, { memo = it }, onSaveMemo)
+                        Spacer(Modifier.height(24.dp))
+                    }
+                } else {
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight().padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("정답 확인 후 이곳에 해설이 표시됩니다.", style = MaterialTheme.typography.bodyMedium, color = c.muted)
+                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-
-            if (q.stemImage != null) {
-                QImage(q.stemImage)
-                Spacer(Modifier.height(12.dp))
-            }
-            Text(q.stem, style = MaterialTheme.typography.bodyLarge, color = c.ink)
-            Spacer(Modifier.height(14.dp))
-
-            q.choices.forEachIndexed { index, choice ->
-                val state = when {
-                    revealed && choice.no == q.answerNo -> ChoiceState.CORRECT
-                    revealed && choice.no == selected -> ChoiceState.WRONG
-                    !revealed && choice.no == selected -> ChoiceState.SELECTED
-                    else -> ChoiceState.DEFAULT
+        } else {
+            ScrollableContentColumn(pad) {
+                QuestionContent(q, selected, revealed) { vm.select(it) }
+                if (revealed) {
+                    Spacer(Modifier.height(6.dp))
+                    ExplanationContent(q, isFav, memo, { toggleFav() }, { memo = it }, onSaveMemo)
                 }
-                ChoiceItem(
-                    no = index + 1,
-                    body = choice.body,
-                    state = state,
-                    imageAsset = choice.imageAsset,
-                    note = if (revealed) choice.note else null,
-                    onClick = if (!revealed) ({ vm.select(choice.no) }) else null
-                )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(24.dp))
             }
-
-            if (revealed) {
-                Spacer(Modifier.height(6.dp))
-                val displayAnswerNo = q.choices.indexOfFirst { it.no == q.answerNo } + 1
-                ExplanationCard(
-                    answerNo = displayAnswerNo,
-                    explanation = q.explanation,
-                    referencesMd = q.referencesMd,
-                    isFavorite = isFav,
-                    onToggleFavorite = { toggleFav() },
-                    memo = memo,
-                    onMemoChange = { memo = it },
-                    onSaveMemo = { scope.launch { withContext(Dispatchers.IO) { repo.saveMemo(q.id, memo) } } }
-                )
-            }
-            Spacer(Modifier.height(24.dp))
         }
     }
 
@@ -260,6 +250,73 @@ fun QuizScreen(
             dismissButton = { TextButton(onClick = { showSubmitDialog = false }) { Text("취소", color = c.muted) } }
         )
     }
+}
+
+/** 문제 본문 + 보기 목록 (세로 1단·가로 2단 좌측에서 공용). 채점 로직은 원본 choice.no 기준 유지. */
+@Composable
+private fun QuestionContent(
+    q: QuestionFull,
+    selected: Int?,
+    revealed: Boolean,
+    onSelect: (Int) -> Unit
+) {
+    val c = MaterialTheme.appColors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SafetyChip("${q.subjectId}과목 · ${q.subjectShort}")
+        Spacer(Modifier.weight(1f))
+        if (q.isDisputed) {
+            Text("이의제기 문항", color = c.red, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+
+    if (q.stemImage != null) {
+        QImage(q.stemImage)
+        Spacer(Modifier.height(12.dp))
+    }
+    Text(q.stem, style = MaterialTheme.typography.bodyLarge, color = c.ink)
+    Spacer(Modifier.height(14.dp))
+
+    q.choices.forEachIndexed { index, choice ->
+        val state = when {
+            revealed && choice.no == q.answerNo -> ChoiceState.CORRECT
+            revealed && choice.no == selected -> ChoiceState.WRONG
+            !revealed && choice.no == selected -> ChoiceState.SELECTED
+            else -> ChoiceState.DEFAULT
+        }
+        ChoiceItem(
+            no = index + 1,
+            body = choice.body,
+            state = state,
+            imageAsset = choice.imageAsset,
+            note = if (revealed) choice.note else null,
+            onClick = if (!revealed) ({ onSelect(choice.no) }) else null
+        )
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** 해설 카드 (정답 표시번호 = 셔플된 목록에서의 위치). */
+@Composable
+private fun ExplanationContent(
+    q: QuestionFull,
+    isFav: Boolean,
+    memo: String,
+    onToggleFavorite: () -> Unit,
+    onMemoChange: (String) -> Unit,
+    onSaveMemo: () -> Unit
+) {
+    val displayAnswerNo = q.choices.indexOfFirst { it.no == q.answerNo } + 1
+    ExplanationCard(
+        answerNo = displayAnswerNo,
+        explanation = q.explanation,
+        referencesMd = q.referencesMd,
+        isFavorite = isFav,
+        onToggleFavorite = onToggleFavorite,
+        memo = memo,
+        onMemoChange = onMemoChange,
+        onSaveMemo = onSaveMemo
+    )
 }
 
 /** §5.14 회차/과목 풀이 중단 시트 — 오답 저장 토글 + 이어풀기 안내 */

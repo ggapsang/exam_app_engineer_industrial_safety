@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,15 +64,16 @@ import com.daim.safetyexam.ui.theme.appColors
  * 폰에서는 가용 폭이 이보다 작아 아무 영향이 없다.
  *
  * ── 태블릿 대응 방향 (각주) ────────────────────────────────────────────────
- *  [현재] 옵션 1 · 최소 개선 : 본문 폭을 [ContentMaxWidth]로 제한하고 가운데 정렬.
- *         세로 스크롤 본문 화면(홈/통계/설정/풀이/결과/모의고사 시작/과목 설정/문항 상세)에만 적용.
- *         단일 APK 런타임 로직이라 같은 빌드가 폰=꽉참 / 태블릿=중앙 제한으로 자동 분기.
+ *  [적용] 옵션 2 일부 · 본격 태블릿 대응 :
+ *   - 회전: 태블릿(sw600dp+)만 가로 허용, 폰은 세로 고정 (res/values(-sw600dp)/bools.xml
+ *     `allow_rotation` + MainActivity 런타임 `requestedOrientation`).
+ *   - 폭 판정: [rememberIsWide] (screenWidthDp ≥ 840) 로 2단/레일 게이트 (Responsive.kt).
+ *   - 넓은 화면 2단: 풀이(문제↔해설)·결과·문항 상세 좌우 분할, 홈 3열·통계 2열,
+ *     홈/통계/설정 트라이어드는 [TriadScaffold]로 하단탭↔[SafetyNavRail] 자동 전환.
+ *   - 본문 폭: [ScrollableContentColumn] 가 [ContentMaxWidth](640dp) 로 제한·중앙 정렬(폰=꽉참).
+ *   단일 APK 런타임 로직이라 같은 빌드가 폰/태블릿·세로/가로로 자동 분기.
  *
- *  [가능] 옵션 2 · 본격 태블릿 대응 : WindowSizeClass 도입 → 마스터-디테일 2열 레이아웃,
- *         회차 그리드 열 수 적응, (하드 제약인 portrait 잠금 재검토 후) 가로 모드 허용,
- *         목록/그리드 화면(회차 목록·즐겨찾기·검색·오답노트) 폭 제한까지 확장.
- *
- *  [가능] 옵션 3 · 현행 유지 : 별도 태블릿 대응 없이 폰 레이아웃을 그대로 확대 사용.
+ *  [미적용] 목록/그리드 화면(회차 목록·즐겨찾기·검색·오답노트) 마스터-디테일은 후속 과제.
  * ──────────────────────────────────────────────────────────────────────────
  */
 val ContentMaxWidth = 640.dp
@@ -83,13 +86,14 @@ val ContentMaxWidth = 640.dp
 fun ScrollableContentColumn(
     pad: PaddingValues,
     contentPadding: Dp = 14.dp,
+    maxWidth: Dp = ContentMaxWidth,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Box(Modifier.padding(pad).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier
                 .fillMaxSize()
-                .widthIn(max = ContentMaxWidth)
+                .widthIn(max = maxWidth)
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
             content = content
@@ -476,6 +480,75 @@ private fun BottomItem(label: String, icon: ImageVector, active: Boolean, onClic
         Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(18.dp))
         Spacer(Modifier.height(3.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
+    }
+}
+
+// ──────────────────────────────── 네비게이션 레일 (태블릿 가로) ────────────────────────────────
+
+/** 넓은 화면에서 하단 탭 대신 좌측에 세우는 세로 내비게이션. [SafetyBottomBar]와 동일 3탭. */
+@Composable
+fun SafetyNavRail(current: NavTab, onHome: () -> Unit, onStats: () -> Unit, onSettings: () -> Unit) {
+    val c = MaterialTheme.appColors
+    Surface(color = c.card) {
+        Row(Modifier.fillMaxHeight()) {
+            Column(
+                Modifier.fillMaxHeight().width(84.dp).padding(vertical = 12.dp, horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                RailItem("홈", Icons.Filled.Home, current == NavTab.HOME, onHome)
+                RailItem("통계", Icons.Filled.BarChart, current == NavTab.STATS, onStats)
+                RailItem("설정", Icons.Filled.Settings, current == NavTab.SETTINGS, onSettings)
+            }
+            Box(Modifier.fillMaxHeight().width(1.dp).background(c.line))
+        }
+    }
+}
+
+@Composable
+private fun RailItem(label: String, icon: ImageVector, active: Boolean, onClick: () -> Unit) {
+    val c = MaterialTheme.appColors
+    val tint = if (active) c.navActive else c.muted
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
+    }
+}
+
+/**
+ * 홈/통계/설정 트라이어드용 어댑티브 스캐폴드.
+ * 넓은 화면(태블릿 가로)이면 좌측 [SafetyNavRail], 아니면 하단 [SafetyBottomBar].
+ * [topBar]/[content]는 그대로 전달하며, content 는 소비할 [PaddingValues]를 받는다.
+ */
+@Composable
+fun TriadScaffold(
+    current: NavTab,
+    onHome: () -> Unit,
+    onStats: () -> Unit,
+    onSettings: () -> Unit,
+    topBar: @Composable () -> Unit,
+    content: @Composable (PaddingValues) -> Unit
+) {
+    val c = MaterialTheme.appColors
+    if (rememberIsWide()) {
+        Scaffold(containerColor = c.bg, topBar = topBar) { pad ->
+            Row(Modifier.fillMaxSize().padding(pad)) {
+                SafetyNavRail(current, onHome, onStats, onSettings)
+                Box(Modifier.weight(1f).fillMaxHeight()) { content(PaddingValues(0.dp)) }
+            }
+        }
+    } else {
+        Scaffold(
+            containerColor = c.bg,
+            topBar = topBar,
+            bottomBar = { SafetyBottomBar(current, onHome, onStats, onSettings) },
+            content = content
+        )
     }
 }
 

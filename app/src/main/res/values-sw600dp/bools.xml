@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 태블릿(smallestWidth ≥ 600dp): 가로/세로 자유 회전 허용 -->
+    <bool name="allow_rotation">true</bool>
+</resources>

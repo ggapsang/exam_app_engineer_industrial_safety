@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -40,9 +39,11 @@ import com.daim.safetyexam.data.StatsSummary
 import com.daim.safetyexam.ui.AppTopBar
 import com.daim.safetyexam.ui.NavTab
 import com.daim.safetyexam.ui.PassBar
-import com.daim.safetyexam.ui.SafetyBottomBar
+import com.daim.safetyexam.ui.TriadScaffold
 import com.daim.safetyexam.ui.SectionLabel
 import com.daim.safetyexam.ui.ScrollableContentColumn
+import com.daim.safetyexam.ui.ContentMaxWidth
+import com.daim.safetyexam.ui.rememberIsWide
 import com.daim.safetyexam.ui.theme.appColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,69 +66,96 @@ fun StatsScreen(onHome: () -> Unit, onSettings: () -> Unit) {
         value = withContext(Dispatchers.IO) { Repository.get(context).stats() }
     }
 
-    Scaffold(
-        containerColor = c.bg,
-        topBar = { AppTopBar("학습 통계") },
-        bottomBar = { SafetyBottomBar(NavTab.STATS, onHome = onHome, onStats = {}, onSettings = onSettings) }
+    TriadScaffold(
+        current = NavTab.STATS,
+        onHome = onHome, onStats = {}, onSettings = onSettings,
+        topBar = { AppTopBar("학습 통계") }
     ) { pad ->
         val s = stats
         if (s == null) {
             Box(Modifier.padding(pad).fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = c.amber)
             }
-            return@Scaffold
+            return@TriadScaffold
         }
-        ScrollableContentColumn(pad) {
+        val wide = rememberIsWide()
+        ScrollableContentColumn(pad, maxWidth = if (wide) 1000.dp else ContentMaxWidth) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatBox("${s.totalAttempts}", "누적 풀이", Modifier.weight(1f))
                 StatBox("${(s.accuracy * 100).toInt()}%", "정답률", Modifier.weight(1f))
                 StatBox("${s.streakDays}일", "연속 학습", Modifier.weight(1f))
             }
-
             Spacer(Modifier.height(12.dp))
-            CardBox {
-                SectionLabel("과목별 정답률")
-                Spacer(Modifier.height(4.dp))
-                s.subjectStats.forEach { st ->
-                    val pct = (st.accuracy * 100).toInt()
-                    PassBar(
-                        label = st.shortName,
-                        value = if (st.total == 0) 0 else pct,
-                        fillColor = if (st.total == 0) c.muted else if (pct < 50) c.red else c.navy2,
-                        showPassMark = false
-                    )
-                }
-            }
 
-            Spacer(Modifier.height(12.dp))
-            CardBox {
-                SectionLabel("약점 과목 Top 5")
-                Spacer(Modifier.height(6.dp))
-                val weak = s.subjectStats.filter { it.total > 0 }.sortedBy { it.accuracy }.take(5)
-                if (weak.isEmpty()) {
-                    Text("아직 풀이 기록이 없습니다.", style = MaterialTheme.typography.bodyMedium, color = c.muted)
-                } else {
-                    weak.forEachIndexed { i, st ->
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("${i + 1}. ${st.shortName}", style = MaterialTheme.typography.bodyMedium, color = c.ink)
-                            Text("${(st.accuracy * 100).toInt()}%", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.red)
-                        }
-                        if (i < weak.size - 1) Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+            if (wide) {
+                // 넓은 화면: 좌(과목별 정답률) / 우(약점 Top5 + 최근 30일) 2단
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f)) { SubjectAccuracyCard(s) }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        WeakTop5Card(s)
+                        ActivityCard(s)
                     }
                 }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            CardBox {
-                SectionLabel("최근 30일 학습량")
-                Spacer(Modifier.height(8.dp))
-                Sparkline(s)
+            } else {
+                SubjectAccuracyCard(s)
+                Spacer(Modifier.height(12.dp))
+                WeakTop5Card(s)
+                Spacer(Modifier.height(12.dp))
+                ActivityCard(s)
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun SubjectAccuracyCard(s: StatsSummary) {
+    val c = MaterialTheme.appColors
+    CardBox {
+        SectionLabel("과목별 정답률")
+        Spacer(Modifier.height(4.dp))
+        s.subjectStats.forEach { st ->
+            val pct = (st.accuracy * 100).toInt()
+            PassBar(
+                label = st.shortName,
+                value = if (st.total == 0) 0 else pct,
+                fillColor = if (st.total == 0) c.muted else if (pct < 50) c.red else c.navy2,
+                showPassMark = false
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeakTop5Card(s: StatsSummary) {
+    val c = MaterialTheme.appColors
+    CardBox {
+        SectionLabel("약점 과목 Top 5")
+        Spacer(Modifier.height(6.dp))
+        val weak = s.subjectStats.filter { it.total > 0 }.sortedBy { it.accuracy }.take(5)
+        if (weak.isEmpty()) {
+            Text("아직 풀이 기록이 없습니다.", style = MaterialTheme.typography.bodyMedium, color = c.muted)
+        } else {
+            weak.forEachIndexed { i, st ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${i + 1}. ${st.shortName}", style = MaterialTheme.typography.bodyMedium, color = c.ink)
+                    Text("${(st.accuracy * 100).toInt()}%", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold), color = c.red)
+                }
+                if (i < weak.size - 1) Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityCard(s: StatsSummary) {
+    CardBox {
+        SectionLabel("최근 30일 학습량")
+        Spacer(Modifier.height(8.dp))
+        Sparkline(s)
     }
 }
 
