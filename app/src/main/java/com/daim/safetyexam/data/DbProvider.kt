@@ -25,7 +25,8 @@ object DbProvider {
     // v3: choices.note 컬럼 추가(보기별 해설 — 보기 셔플 대비). 기존 콘텐츠/사용자 데이터는 보존.
     // v4: 콘텐츠(오답/해설) 갱신 반영.
     // v5: 콘텐츠 갱신 반영.
-    const val ASSET_DB_VERSION = 5
+    // v6: 해설 보강, stem/보기 이미지→텍스트 전환, 오타 수정 반영.
+    const val ASSET_DB_VERSION = 6
 
     /** 단일 로컬 사용자 식별자 */
     const val LOCAL_USER = "local"
