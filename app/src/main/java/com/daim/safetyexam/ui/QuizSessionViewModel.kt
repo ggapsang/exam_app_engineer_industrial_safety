@@ -57,6 +57,8 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
     private var sessionStartMs: Long = 0L
     private val elapsedByQ = HashMap<Int, Long>()
     private var enterQuestionMs: Long = 0L
+    // exitWithSave로 이미 user_attempts에 저장된 문항 ID (중복 기록 방지)
+    private val committedIds = mutableSetOf<Int>()
 
     val current: QuestionFull? get() = questions.getOrNull(currentIndex)
     val answeredCount: Int get() = questions.count { answers.containsKey(it.id) }
@@ -112,6 +114,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         answers.clear()
         revealed.clear()
         elapsedByQ.clear()
+        committedIds.clear()
         sessionLabel = ""
         loading = true
         startedAt = nowText()
@@ -133,6 +136,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
             }
             if (restore != null) {
                 answers.putAll(restore.answers)
+                committedIds.addAll(restore.committedIds)
                 if (instantGrading) restore.answers.keys.forEach { revealed[it] = true }
                 currentIndex = restore.index.coerceIn(0, (loaded.size - 1).coerceAtLeast(0))
             }
@@ -188,16 +192,25 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         if (!isResumable) return
         accrueElapsed()
         timerJob?.cancel()
-        // 진행 위치 스냅샷 저장 (이어풀기)
-        val snap = ResumeSnapshot(mode, sessionLabel, questions.map { it.id }, HashMap(answers), currentIndex)
+
+        val snapshotAnswers = HashMap(answers)
+        // 이번 exit에서 새로 저장할 문항 ID (이미 저장된 것 제외)
+        val newIds = if (saveWrong) {
+            snapshotAnswers.keys.filterTo(mutableSetOf()) { it !in committedIds }
+        } else mutableSetOf()
+        committedIds.addAll(newIds)
+
+        // 진행 위치 스냅샷 저장 (이어풀기) — committedIds도 함께 저장해 재시작 후에도 중복 방지
+        val snap = ResumeSnapshot(mode, sessionLabel, questions.map { it.id }, snapshotAnswers, currentIndex, HashSet(committedIds))
         settings.saveResume(snap.toJson())
-        if (saveWrong) {
-            val snapshotAnswers = HashMap(answers)
+
+        if (newIds.isNotEmpty()) {
             val elapsed = HashMap(elapsedByQ)
             val qs = questions
             viewModelScope.launch {
                 withContext(Dispatchers.IO) {
                     for (q in qs) {
+                        if (q.id !in newIds) continue
                         val sel = snapshotAnswers[q.id] ?: continue
                         repo.recordAttempt(q.id, sel, sel == q.answerNo, elapsed[q.id] ?: 0L)
                     }
@@ -218,6 +231,9 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
         finished = true
         settings.clearResume()  // 완료했으므로 이어풀기 스냅샷 제거
 
+        // exitWithSave로 이미 저장된 문항은 제외 (이어풀기 후 완료 시 중복 기록 방지)
+        val alreadyCommitted = HashSet(committedIds)
+
         viewModelScope.launch {
             val perSubjectTotal = HashMap<Int, Int>()
             val perSubjectCorrect = HashMap<Int, Int>()
@@ -235,7 +251,7 @@ class QuizSessionViewModel(app: Application) : AndroidViewModel(app) {
                     perSubjectTotal[q.subjectId] = (perSubjectTotal[q.subjectId] ?: 0) + 1
                     if (isCorrect) perSubjectCorrect[q.subjectId] = (perSubjectCorrect[q.subjectId] ?: 0) + 1
                     shortNames[q.subjectId] = q.subjectShort
-                    if (record) repo.recordAttempt(q.id, sel, isCorrect, elapsedByQ[q.id] ?: 0L)
+                    if (record && q.id !in alreadyCommitted) repo.recordAttempt(q.id, sel, isCorrect, elapsedByQ[q.id] ?: 0L)
                 }
             }
 

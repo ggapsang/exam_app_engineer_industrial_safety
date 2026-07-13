@@ -12,7 +12,8 @@ data class ResumeSnapshot(
     val label: String,          // 예: "2021년 1회" / "기계위험방지"
     val ids: List<Int>,
     val answers: Map<Int, Int>, // questionId -> 선택 보기 번호
-    val index: Int
+    val index: Int,
+    val committedIds: Set<Int> = emptySet() // user_attempts에 이미 저장된 문항 ID
 ) {
     val total: Int get() = ids.size
     /** 진행률(%) — 응답 기준 */
@@ -27,6 +28,7 @@ data class ResumeSnapshot(
         answers.forEach { (k, v) -> ans.put(k.toString(), v) }
         o.put("answers", ans)
         o.put("index", index)
+        o.put("committed", JSONArray(committedIds.toList()))
         return o.toString()
     }
 
@@ -45,12 +47,16 @@ data class ResumeSnapshot(
                     val k = keys.next()
                     answers[k.toInt()] = ansObj.getInt(k)
                 }
+                val committed = o.optJSONArray("committed")?.let { arr ->
+                    (0 until arr.length()).mapTo(HashSet()) { arr.getInt(it) }
+                } ?: emptySet<Int>()
                 ResumeSnapshot(
                     mode = StudyMode.valueOf(o.getString("mode")),
                     label = o.getString("label"),
                     ids = ids,
                     answers = answers,
-                    index = o.getInt("index")
+                    index = o.getInt("index"),
+                    committedIds = committed
                 )
             } catch (e: Exception) {
                 null
